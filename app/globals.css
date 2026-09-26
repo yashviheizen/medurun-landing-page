@@ -609,6 +609,47 @@
     }
   }
 
+  /* ---------------------------------------------------------------------------
+     The "how it works" stage.
+
+     From `lg`, and only where motion is welcome, the steps and the route pin under
+     the header and the page's own scrollbar becomes the thing that advances them.
+     The track is given 300vh; the stage inside it fills the screen below the
+     header, so the ~200vh difference is the scroll the four steps are mapped onto
+     — roughly half a screen each, which is long enough to read a step rather than
+     watch it flash past. `--header-h` is the same custom property the header sets
+     its own height from, so the stage can never pin at the wrong offset.
+
+     The height lives here rather than in the component because the component
+     *measures* it: it reads the track's height and the stage's `top` off the DOM
+     every time it recalculates, so this is the only place either number is written
+     down, and changing 300vh here changes the pacing with nothing to keep in sync.
+
+     Below `lg` neither rule applies: the section is its own height, the stage is
+     not pinned, and the steps are a plain vertical list the reader taps or keys
+     through. Under `prefers-reduced-motion` the same is true at every width — a
+     stage whose whole point is that things move as you scroll has nothing to offer
+     a reader who has asked for less of that, so it is not built rather than built
+     and then stilled. The component watches this exact media query, so it stops
+     driving the highlight at precisely the width the pinning stops. */
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .how-track {
+      height: 300vh;
+    }
+
+    /* Pinned at the header's own height and a screen tall, so the stage is exactly
+       the space below the header. The content is centred in it rather than sized to
+       it: the steps keep their own rhythm and the air falls above and below them. */
+    .how-stage {
+      position: sticky;
+      top: var(--header-h);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: calc(100vh - var(--header-h));
+    }
+  }
+
   /* Service explorer: one panel visible at a time, stacked in a single grid cell
      so the column is as tall as the largest panel and swapping never reflows.
      Scoped to `.js` for the same reason the slider is — with no JS the tab list

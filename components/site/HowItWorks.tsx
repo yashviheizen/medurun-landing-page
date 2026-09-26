@@ -26,13 +26,23 @@ const ARRIVAL = (steps.length - 1) / steps.length;
 const INSIDE = 0.01;
 
 /**
+ * The most of the stage a single painted frame may cover, as a fraction of it.
+ * A quarter of the stage is one step, so a flung wheel or a dragged scrollbar
+ * crosses a step in about a dozen frames rather than in one: Dispatch and Track
+ * are passed *through* at speed instead of being jumped over. Ordinary reading
+ * never reaches the cap — at anything under about two screens a second the
+ * diagram sits exactly on the scroll position rather than trailing it.
+ */
+const CHASE = 1 / steps.length / 12;
+
+/**
  * Every step and its description are always rendered — interaction only moves the
  * highlight and the route progress. That keeps the section readable with JS off,
  * with animation disabled, and on touch devices where hover does not exist.
  *
  * On large screens the section is a stage: the steps and the route pin under the
- * header for about three screens of scroll, and the page's own scrollbar is the
- * clock. Scroll position maps to a fraction of the stage, the fraction maps to a
+ * header for two screens of scroll — half a screen a step — and the page's own
+ * scrollbar is the clock. Scroll position maps to a fraction of the stage, the fraction maps to a
  * quarter — Request, Dispatch, Track, Care — and the highlighted card, the lit
  * route, the nodes behind the unit and the ambulance's position are all read off
  * that one fraction. So they cannot disagree, scrolling back up runs the whole
@@ -71,28 +81,60 @@ export function HowItWorks() {
       "(min-width: 1024px) and (prefers-reduced-motion: no-preference)",
     );
 
+    let dead = false;
     let frame = 0;
     let listening = false;
     /** The sticky offset, read off the stage so the number only lives in the CSS. */
     let offset = 0;
+    /** Where the page actually is in the stage. */
+    let target = 0;
+    /** What the diagram is showing. Equal to `target` except while catching up. */
+    let shown = 0;
 
     /** The scroll the stage has while pinned: its track, less the screen it fills. */
     const travel = () => Math.max(track.getBoundingClientRect().height - stage.offsetHeight, 1);
 
-    const apply = () => {
-      frame = 0;
+    /** How far through the stage the page is: 0 as it pins, 1 as it releases. */
+    const read = () => {
       const reached = offset - track.getBoundingClientRect().top;
-      const fraction = Math.min(Math.max(reached / travel(), 0), 1);
+      return Math.min(Math.max(reached / travel(), 0), 1);
+    };
 
-      setProgress(fraction);
+    /** The one place the fraction becomes a highlight, so they cannot disagree. */
+    const draw = () => {
+      setProgress(shown);
       // Four equal quarters. At exactly 1 the floor would run off the end.
-      setActive(Math.min(Math.floor(fraction * steps.length), steps.length - 1));
+      setActive(Math.min(Math.floor(shown * steps.length), steps.length - 1));
+    };
+
+    /**
+     * Whether any part of the stage is on screen. Off screen there is nothing to
+     * pass through — a nav link three sections down should not leave the diagram
+     * quietly running a sequence nobody is looking at — so the chase is skipped
+     * and the fraction snaps.
+     */
+    const onScreen = () => {
+      const box = track.getBoundingClientRect();
+      return box.bottom > 0 && box.top < window.innerHeight;
+    };
+
+    const paint = () => {
+      frame = 0;
+      const gap = target - shown;
+      shown =
+        Math.abs(gap) <= CHASE || !onScreen() ? target : shown + Math.sign(gap) * CHASE;
+
+      draw();
+      // Still behind the page: keep painting until it has caught up, with or
+      // without further scrolling. This is what carries the sequence through a
+      // fling, and it runs backwards for an upward one on the same arithmetic.
+      if (shown !== target) frame = requestAnimationFrame(paint);
     };
 
     /** One read per frame at most: a scroll fires far more often than it paints. */
     const onScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(apply);
+      target = read();
+      if (!frame) frame = requestAnimationFrame(paint);
     };
 
     const listen = (on: boolean) => {
@@ -102,6 +144,25 @@ export function HowItWorks() {
       else window.removeEventListener("scroll", onScroll);
     };
 
+    /**
+     * Geometry, and then the diagram put straight onto it with no chase. Anything
+     * that can move the section out from under the stage has to come through here
+     * or the stage goes on mapping scroll positions onto a track that has since
+     * moved: a resize, a rotation, a webfont swapping in and reflowing the cards,
+     * a late image above the section pushing it down the page.
+     */
+    const measure = () => {
+      offset = parseFloat(window.getComputedStyle(stage).top) || 0;
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      target = shown = read();
+      draw();
+    };
+
+    const remeasure = () => {
+      if (!dead && pinned.matches) measure();
+    };
+
     const sync = () => {
       if (!pinned.matches) {
         scrollToStep.current = null;
@@ -109,8 +170,6 @@ export function HowItWorks() {
         setDriven(false);
         return;
       }
-
-      offset = parseFloat(window.getComputedStyle(stage).top) || 0;
 
       /**
        * A step is a scroll position while the stage is pinned, so selecting one is
@@ -125,17 +184,34 @@ export function HowItWorks() {
 
       listen(true);
       setDriven(true);
-      apply();
+      measure();
     };
 
     sync();
     window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
     pinned.addEventListener("change", sync);
 
+    /* The track and the stage are sized in viewport units, so the observer is not
+       watching for them to change on their own — it is the cheapest way to hear
+       about everything else that reflows them or the page above them, images and
+       late fonts included, without polling. */
+    const observer = new ResizeObserver(remeasure);
+    observer.observe(track);
+    observer.observe(stage);
+
+    // Belt and braces for the two that can land after layout has settled once.
+    window.addEventListener("load", remeasure);
+    document.fonts?.ready.then(remeasure);
+
     return () => {
+      dead = true;
       if (frame) cancelAnimationFrame(frame);
       listen(false);
+      observer.disconnect();
       window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+      window.removeEventListener("load", remeasure);
       pinned.removeEventListener("change", sync);
     };
   }, []);
