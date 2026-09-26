@@ -1,0 +1,602 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --shell-gutter: 1.25rem;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Sticky header height (4.5rem) plus a rem of air, so anchor targets are not
+       hidden underneath it. */
+    scroll-padding-top: 5.5rem;
+  }
+
+  /* The same clearance on the targets themselves. `scroll-padding-top` covers a
+     link navigation, but a programmatic `scrollIntoView()` and the scroll the
+     browser performs when focus moves into an off-screen element both ignore it;
+     `scroll-margin-top` is honoured by all three, so the heading of a section can
+     never end up behind the header however it was arrived at. */
+  section[id],
+  [id]:target {
+    scroll-margin-top: 5.5rem;
+  }
+
+  body {
+    @apply bg-white text-ink font-sans antialiased;
+    /* Belt-and-braces against a stray wide child causing a horizontal scrollbar. */
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif font-normal tracking-[-0.01em];
+    text-wrap: balance;
+  }
+
+  /* A transparent offset lets the gap take whichever section tone sits behind
+     it — white, paper, navy-ink or navy-deep — instead of one fixed colour. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-red ring-offset-2 ring-offset-transparent rounded-sm;
+  }
+
+  .on-dark :focus-visible {
+    @apply ring-white;
+  }
+}
+
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-shell px-5 sm:px-8 lg:px-10;
+  }
+
+  .eyebrow {
+    @apply text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-muted;
+  }
+
+  /* Operational label: the small uppercase index + name that heads every band,
+     preceded by a red tick. It is the page's smallest unit of the signal line. */
+  .op-label {
+    @apply flex items-center gap-3 font-sans text-[0.6875rem] font-medium uppercase tracking-[0.2em] text-muted;
+  }
+
+  .op-label::before {
+    content: "";
+    @apply h-px w-5 shrink-0 bg-red;
+  }
+
+  .on-dark .op-label {
+    @apply text-white/55;
+  }
+
+  /* Hung off the signal rail: from large screens up the tick reaches back to the
+     rail in the gutter, so the label reads as a station on the line rather than a
+     detached caption. The text still starts exactly on the content edge. */
+  @media (min-width: 1024px) {
+    .op-label--rail {
+      margin-left: -34px;
+    }
+
+    .op-label--rail::before {
+      width: 22px;
+    }
+  }
+
+  /* Control-room ground: a plotting grid, not a decoration. Faint enough to read
+     as paper texture, and faded out at the edges so it never boxes anything in. */
+  .grid-field {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 76px 76px;
+    -webkit-mask-image: radial-gradient(120% 90% at 70% 40%, #000 30%, transparent 78%);
+    mask-image: radial-gradient(120% 90% at 70% 40%, #000 30%, transparent 78%);
+  }
+
+  .grid-field-light {
+    background-image:
+      linear-gradient(to right, rgba(16, 27, 60, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(16, 27, 60, 0.05) 1px, transparent 1px);
+  }
+}
+
+@layer utilities {
+  /* Progressive reveal. The hidden state is scoped to `.js`, which an inline
+     script in the layout sets — without JS nothing can un-hide these, so they
+     must render visible. */
+  .reveal {
+    transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1), transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Held at a legible opacity rather than 0 — content is never blank while it
+     scrolls past, only slightly settled. */
+  .js .reveal[data-visible="false"] {
+    opacity: 0.35;
+    transform: translateY(8px);
+  }
+
+  /* Voices carousel. The track is a native scroll container, so swipe, trackpad,
+     snapping and the scrollbar all belong to the browser; the component only writes
+     scrollLeft for the 420ms run the arrows and the arrow keys perform. The widths
+     live here rather than on the elements because the trailing spacer has to be
+     derived from the card width, and one custom property is the only way to say
+     that once:
+
+       under 768px    one card, and a sliver of the next as a scroll cue
+       768–1023px     a wider card, the peek held as an intermediate
+       1024px and up  card at 66% of the track, the next one reading about a third
+
+     `scroll-padding-inline` matches the track's own padding at each step. Without it
+     a snapped card comes to rest against the viewport edge rather than the content
+     edge the heading above it starts on. */
+  .voices-track {
+    --voice-card: calc(84vw - 6px);
+    scroll-padding-inline: 1.25rem;
+    scrollbar-width: none;
+  }
+
+  .voices-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .voices-track {
+      scroll-padding-inline: 2rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .voices-track {
+      --voice-card: 74%;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .voices-track {
+      --voice-card: 66%;
+      scroll-padding-inline: 0;
+    }
+  }
+
+  .voices-card {
+    flex: 0 0 var(--voice-card);
+  }
+
+  /* Room behind the last card, so it can come to rest on the same edge as the other
+     three rather than stopping short against the end of the track. */
+  .voices-tail {
+    flex: 0 0 calc(100% - var(--voice-card));
+  }
+
+  /* A change of voice dips the card being moved to, very slightly, and it settles
+     back as the run ends: a change of weight while something is travelling, not a
+     crossfade. At 0.9 nothing on the card becomes harder to read. */
+  .js .voices-card {
+    transition: opacity 0.2s ease-out;
+  }
+
+  .js .voices-track[data-moving="true"] .voices-card[data-current="true"] {
+    opacity: 0.9;
+  }
+
+  /* The fill is driven by the index rather than by a timer, and takes the same
+     420ms as the track, so the line and the cards arrive together. */
+  .voices-progress {
+    transition: width 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* The arrows and the readout need JS to mean anything. With none, the track is
+     still a scroll container and all four cards are still reachable — only the
+     controls that would misreport the state are withheld. */
+  .voices-controls {
+    display: none;
+  }
+
+  .js .voices-controls {
+    display: flex;
+  }
+
+  /* Hero headline mask. Each line is clipped by its own wrapper and the inner
+     block rises out of it, so the words are at full opacity the whole way up —
+     nothing is left faint on screen while the page loads. The padding gives the
+     descenders (g, y, p and the italic f) room to live outside the line box; the
+     matching negative margin hands that room straight back, so the headline's
+     leading is exactly what it was. The h1 is a grid so those negative margins
+     cannot collapse into each other and pull the second line up. */
+  .hero-line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.26em;
+    margin-bottom: -0.26em;
+  }
+
+  .hero-line > span {
+    display: block;
+  }
+
+  /* Short desktop viewports — a 1366×768 laptop with a full browser frame, or any
+     window a user has made wide and shallow. The hero is content-sized, so on a
+     700px viewport the rail's labels would otherwise finish about 20px below the
+     fold, and a dispatch route whose last stop you have to scroll to is not a
+     dispatch route. Nothing is removed or reflowed: the section's own vertical
+     rhythm is compressed by 96px, which brings the whole hero — rail included —
+     back above the fold with room to spare — verified down to a 660px viewport,
+     which is a 1366×768 laptop with a full browser frame. The type scale is
+     untouched: nothing is removed, reflowed or resized, only tightened. */
+  @media (min-width: 1024px) and (max-height: 760px) {
+    .hero-canvas {
+      padding-top: 2.25rem;
+    }
+
+    .hero-canvas .hero-head {
+      margin-top: 1.25rem;
+    }
+
+    .hero-canvas .hero-rule {
+      margin-top: 1.5rem;
+    }
+
+    .hero-canvas .hero-actions {
+      margin-top: 1.75rem;
+    }
+
+    .hero-canvas .hero-rail {
+      margin-top: 1.75rem;
+    }
+  }
+
+  /* The "how it works" stage. From lg, and only where motion is welcome, the steps
+     and the route pin under the header for a little over three screens of scroll,
+     and the page's own scrollbar becomes the thing that advances them: the section
+     is given 320vh of height and the stage inside it fills one screen, so the ~225vh
+     difference is the scroll the four steps are mapped onto. The height lives here
+     rather than in the component because the component measures it — it reads the
+     track's height and the stage's `top` off the DOM, so this is the only place
+     either number is written down.
+
+     Below lg the two rules simply do not apply: the section is its own height, the
+     stage is not pinned, and the steps are a plain vertical list the reader taps.
+     Under `prefers-reduced-motion` the same is true at every width — a stage whose
+     whole point is that things move as you scroll has nothing to offer a reader who
+     has asked for less of that, so it is not built rather than built and stilled. */
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .how-track {
+      height: 320vh;
+    }
+
+    /* Pinned at the header's own height, and a screen tall, so the stage is exactly
+       the space below the header. The content is centred in it rather than sized to
+       it: the steps keep their own rhythm and the air falls above and below them. */
+    .how-stage {
+      position: sticky;
+      top: 4.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: calc(100vh - 4.5rem);
+    }
+  }
+
+  /* The ambulance plate on the dispatch canvas. The photograph is never framed:
+     it is masked straight into the navy so it has no edge of its own. On mobile
+     it rises out of the bottom edge of the hero; from lg it is anchored to the
+     right edge and falls away in every other direction from a hot spot over the
+     vehicle, which is what lets the route line cross behind it. */
+  .hero-plate {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.5) 44%,
+      #000 76%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.5) 44%,
+      #000 76%
+    );
+  }
+
+  @media (min-width: 1024px) {
+    .hero-plate {
+      -webkit-mask-image: radial-gradient(
+        102% 62% at 80% 56%,
+        #000 14%,
+        rgba(0, 0, 0, 0.72) 40%,
+        transparent 74%
+      );
+      mask-image: radial-gradient(
+        102% 62% at 80% 56%,
+        #000 14%,
+        rgba(0, 0, 0, 0.72) 40%,
+        transparent 74%
+      );
+    }
+  }
+
+  /* Service explorer: one panel visible at a time, stacked in a single grid cell
+     so the column is as tall as the largest panel and swapping never reflows.
+     Scoped to `.js` for the same reason the slider is — with no JS the tab list
+     cannot do anything, so all five panels must render as a plain readable list
+     rather than four of five silently disappearing. */
+  .js .svc-panel {
+    grid-column: 1;
+    grid-row: 1;
+    opacity: 0;
+    /* Also takes the inactive panels out of the accessibility tree. */
+    visibility: hidden;
+    pointer-events: none;
+    /* At rest, below: a panel waiting to be asked for is parked 8px down, which is
+       where its entrance starts from. */
+    transform: translateY(8px);
+    /* No transition on the resting state itself. Each of the two moving states
+       carries its own, which is what lets a panel that has finished leaving snap
+       back to the waiting position without animating a second time on the way. */
+    transition: none;
+  }
+
+  /* 280ms both ways: long enough to read as a hand-over rather than a cut, short
+     enough that running the tablist with the arrow keys never feels like the panel
+     is lagging behind the selection. `visibility` is in the list rather than
+     switched outright — going from visible it holds until the very end of the
+     transition, so the panel being left is still painted while it fades. */
+  .js .svc-panel[data-active="true"],
+  .js .svc-panel[data-leaving="true"] {
+    transition:
+      opacity 0.28s ease-out,
+      transform 0.28s ease-out,
+      visibility 0.28s;
+  }
+
+  /* Incoming: up from 8px, into place. */
+  .js .svc-panel[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  /* Outgoing: on up and out, 8px past where it sat. The pair reads as one movement
+     in one direction — the service being left continues out of the frame while the
+     one arriving comes up behind it — rather than as a picture falling back into
+     the hole it came from. */
+  .js .svc-panel[data-leaving="true"] {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  /* Rapid selection — a pointer swept down the list, or a held arrow key. Only one
+     panel is ever leaving, but while selections are arriving faster than a
+     transition can finish even that one is cut rather than faded: at most one panel
+     is animating, and it is always the one being asked for. */
+  .js .svc-stack[data-quick="true"] .svc-panel:not([data-active="true"]) {
+    transition: none;
+  }
+
+  /* Mobile service cards scroll natively, so swiping works with no JS at all.
+     Only the 01 / 05 readout needs JS to stay truthful, so only it is hidden. */
+  .svc-scroller {
+    scrollbar-width: none;
+  }
+
+  .svc-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .svc-counter {
+    display: none;
+  }
+
+  .js .svc-counter {
+    display: flex;
+  }
+
+  /* Network principles band. The scroll sweep emphasises one principle at a
+     time, in the same `.js`-scoped way as `.reveal` — with no JS there is
+     nothing to un-hide them, so they must render fully legible. The floor is
+     0.85, not 0: every title and description stays readable at all times, and
+     the sweep only shifts which one leads. */
+  .principle {
+    transition:
+      opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .js .principle[data-revealed="false"] {
+    opacity: 0.85;
+    transform: translateY(6px);
+  }
+
+  /* The band's one indicator. It slides along the top line to the principle being
+     read — pointed at, focused, or reached by the scroll position — rather than
+     filling across the band, so the line reports a position instead of a total. */
+  .principle-mark {
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ---------------------------------------------------------------------------
+     The positioning schematic, routed once.
+
+     The band draws its own line, brings the five stages on in order, and sends one
+     signal down it — then stops. Every hidden state here is scoped to
+     `.js .flow[data-run="false"]`, so the schematic renders complete for a reader
+     with no JS and is restored in a single frame under reduced motion.
+
+     The rail is revealed with `clip-path` rather than a scaled transform because
+     the rail is a dashed border: scaling it stretches the dash pattern, and a line
+     whose dashes grow as it draws reads as elastic rather than as a route being
+     established. Per-stage delays are set inline from the component.
+     --------------------------------------------------------------------------- */
+  .flow-rail,
+  .flow-seg {
+    clip-path: inset(0);
+  }
+
+  .flow-rail {
+    transition: clip-path 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .flow-seg {
+    transition: clip-path 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Left to right on the desktop rail; top to bottom on the stacked connectors,
+     which is the same direction of travel once the row becomes a column. */
+  .js .flow[data-run="false"] .flow-rail {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  .js .flow[data-run="false"] .flow-seg {
+    clip-path: inset(0 0 100% 0);
+  }
+
+  .flow-node {
+    transition: opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .js .flow[data-run="false"] .flow-node {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  /* The labels step up rather than in: 0.55 is still comfortably readable, so no
+     stage of the schematic is ever unlabelled while the line is being drawn. */
+  .flow-label {
+    transition: opacity 0.3s ease-out;
+  }
+
+  /* Labels dim on the way in, never out of reading range: a station that has not
+     been reached yet still has to be readable while the line is drawing past it. */
+  .js .flow[data-run="false"] .flow-label {
+    opacity: 0.72;
+  }
+
+  /* ---------------------------------------------------------------------------
+     Photographic reveals.
+
+     Both are clip masks on a `.reveal` wrapper, so they ride the observer the page
+     already has rather than adding one per figure. A mask, not a fade: a plate that
+     is uncovered keeps its own full contrast from the first frame, where a plate
+     that fades up spends half a second looking like a loading state.
+     --------------------------------------------------------------------------- */
+  .clip-in-right,
+  .clip-in-left,
+  .plate-clip {
+    clip-path: inset(0);
+    transition: clip-path 0.66s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Opposite directions on the two partner bands: each plate is uncovered from the
+     outer edge it bleeds off, so the spread opens outwards from the gutter. */
+  .js .reveal[data-visible="false"] .clip-in-right {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  .js .reveal[data-visible="false"] .clip-in-left {
+    clip-path: inset(0 0 0 100%);
+  }
+
+  .js .plate[data-run="false"] .plate-clip {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  /* The plate's caption follows the photograph rather than arriving with it. */
+  .plate-caption {
+    transition: opacity 0.42s ease-out 0.42s;
+  }
+
+  .js .plate[data-run="false"] .plate-caption {
+    opacity: 0;
+  }
+
+  /* One line of operational metadata, read left to right. Delays are inline. */
+  .op-stagger {
+    transition: opacity 0.34s ease-out, transform 0.34s ease-out;
+  }
+
+  .js .reveal[data-visible="false"] .op-stagger {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  /* ---------------------------------------------------------------------------
+     The helpline's two rings.
+
+     Two, not a pulse: the closing band announces itself once when it is reached
+     and then holds still. The animation is named only under `[data-visible="true"]`,
+     which is how it starts on the reveal rather than on page load.
+     --------------------------------------------------------------------------- */
+  @keyframes phone-ring {
+    from {
+      transform: scale(0.72);
+      opacity: 0.5;
+    }
+    to {
+      transform: scale(1.9);
+      opacity: 0;
+    }
+  }
+
+  .phone-ring {
+    opacity: 0;
+  }
+
+  .js .reveal[data-visible="true"] .phone-ring {
+    animation: phone-ring 1.9s cubic-bezier(0.22, 1, 0.36, 1) 2 both;
+  }
+
+  .js .reveal[data-visible="true"] .phone-ring--second {
+    animation-delay: 0.55s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    /* Sequenced entrances are built from delays, so the delays have to go too:
+       a 500ms delay in front of a 0.001ms animation is still half a second of
+       an element sitting in its own start state. Everything arrives at once. */
+    animation-delay: 0s !important;
+    transition-delay: 0s !important;
+  }
+
+  .js .reveal[data-visible="false"],
+  .js .principle[data-revealed="false"],
+  .js .reveal[data-visible="false"] .op-stagger,
+  .js .flow[data-run="false"] .flow-node,
+  .js .flow[data-run="false"] .flow-label,
+  .js .plate[data-run="false"] .plate-caption {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Services switch outright. The selection still changes — indicator, number,
+     title, icon, panel — but nothing slides: neither the panel being left nor the
+     one arriving carries its 8px. The leaving state is named as well as the
+     resting one, or it would out-specify this rule and keep its translate. */
+  .js .svc-panel,
+  .js .svc-panel[data-leaving="true"] {
+    transform: none;
+  }
+
+  /* No path or mask animation at all: every line is drawn and every plate is
+     uncovered from the first frame. */
+  .js .flow[data-run="false"] .flow-rail,
+  .js .flow[data-run="false"] .flow-seg,
+  .js .reveal[data-visible="false"] .clip-in-right,
+  .js .reveal[data-visible="false"] .clip-in-left,
+  .js .plate[data-run="false"] .plate-clip {
+    clip-path: inset(0);
+  }
+}

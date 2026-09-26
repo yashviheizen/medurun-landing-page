@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Deployment / platform caches
+.vercel/
+.netlify/
+.turbo/
+
+# Environment files — never commit real values
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Temporary screenshots & scratch captures
+screenshots/
+shots/
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif
+/*.webp
+*.screenshot.png
+tmp/
+.tmp/
+
+# Editor / tooling local state
+.claude/
+.idea/
+.vscode/
+*.swp
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
