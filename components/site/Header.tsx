@@ -30,8 +30,15 @@ import { cn } from "@/lib/cn";
  *
  * Rebuilt on resize, because the root margin is computed from the viewport height.
  */
-/** Fraction of the viewport height the reading line sits at. */
-const LINE_RATIO = 0.38;
+/**
+ * Where the reading line sits in the readable area — the viewport below the sticky
+ * header — as a fraction of it. Half is the honest answer: a section takes the nav
+ * the moment it owns more of what the reader can see than the one before it. Taken
+ * as a fraction of the whole viewport instead, the header's own height pushes the
+ * line up, and on a 900px screen "Services" stayed unlit until it already covered
+ * three quarters of the page.
+ */
+const LINE_RATIO = 0.5;
 /** Air between the sticky header and the reading line on short viewports. */
 const LINE_MIN_GAP = 8;
 
@@ -76,7 +83,8 @@ export function Header() {
       const view = viewport();
       const header = Math.round(headerRef.current?.getBoundingClientRect().height ?? 72);
       const floor = header + LINE_MIN_GAP;
-      return Math.min(Math.max(Math.round(view * LINE_RATIO), floor), Math.max(view - 2, 1));
+      const line = Math.round(header + (view - header) * LINE_RATIO);
+      return Math.min(Math.max(line, floor), Math.max(view - 2, 1));
     };
 
     /**
@@ -187,7 +195,10 @@ export function Header() {
         Skip to content
       </a>
 
-      <div className="shell flex h-[4.5rem] items-center justify-between gap-4">
+      {/* The one place the header's height is used; `--header-h` in globals.css is
+          the one place it is written, because the hero subtracts it from the
+          viewport to size its own frame. */}
+      <div className="shell flex h-[var(--header-h)] items-center justify-between gap-4">
         <Link href="/" className="flex shrink-0 items-center gap-2.5" onClick={close}>
           <Image
             src={asset("/brand/medurun-logo.png")}

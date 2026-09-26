@@ -53,11 +53,18 @@ export const hero = {
     "A technology-driven emergency network for patients, hospitals, agencies, and crews.",
   primaryCta: { label: "Get in touch", href: "#contact" },
   secondaryCta: { label: "What we provide", href: "#services" },
-  // PLACEHOLDER: stock photography standing in for an approved asset. Replace with
-  // an Indian-context or MEDURUN-branded ambulance photograph once one is cleared.
-  image: {
-    src: "https://images.unsplash.com/photo-1619025873875-59dfdd2bbbd6",
-    alt: "An ambulance with its emergency beacons lit, ready to move on a night call",
+  // The hero's full-bleed photograph. It is a supplied asset in `public/`, not a
+  // remote one, so the path goes through `asset()` at the call site the way the
+  // logo mark does — `basePath` does not rewrite literal `public/` paths.
+  //
+  // `alt` is empty on purpose. The photograph is the section's ground, sitting
+  // behind the logo, the headline and the buttons that carry every bit of the
+  // hero's meaning; announcing it would add a description of scenery between the
+  // page's landmark and its first heading without telling a screen reader
+  // anything the headline does not already say.
+  background: {
+    src: "/images/medurun-hero-background.png",
+    alt: "",
   },
 } as const;
 

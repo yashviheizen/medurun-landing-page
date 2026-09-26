@@ -1,5 +1,7 @@
 import { cn } from "@/lib/cn";
 
+import type { CSSProperties } from "react";
+
 /**
  * The hero's Live Dispatch Rail.
  *
@@ -17,24 +19,24 @@ import { cn } from "@/lib/cn";
  * first and last labels from overhanging the container the way edge-anchored
  * stops would.
  *
- * Motion is one sequence, once, and then the section is finished:
+ * The rail does not finish. A signal runs REQUEST → DISPATCH → TRACK → CARE,
+ * ringing each stop as it draws level with it, then rests at CARE and goes again.
+ * Its first run is also the entrance: that run is what draws the red segment, and
+ * the segment then stays — the network does not un-establish itself between calls.
  *
- *   820ms   the neutral line draws left to right (520ms)
- *   1340ms  REQUEST comes on line
- *   ~1626   the completed red segment reaches DISPATCH
- *   ~1972   … TRACK
- *   ~2319   … CARE, and it stops there
+ * None of that timing is written here. The rail's whole clock is four custom
+ * properties on `.hero-rail` in globals.css — one cycle, the share of it spent
+ * moving, the lead before the first run, and a per-stop position along it — and
+ * every moving part derives its own delay from them. The only thing this component
+ * contributes is `--rail-at`: where each stop sits along the run, 0 to 1. A stop
+ * cannot drift out of step with the signal that reaches it, because neither of
+ * them knows a duration in milliseconds.
  *
- * The red segment and the signal dot are two elements running two keyframes, but
- * the keyframes share their percentage stops and their duration, so the dot is on
- * the segment's leading edge by construction rather than by two numbers being
- * kept in agreement. Each node rings once as the dot draws level with it, timed
- * off the same table.
- *
- * Every resting state is declared in the markup — line drawn, segment complete,
- * dot on CARE, all four nodes lit. The animations only supply the way in, so with
- * `prefers-reduced-motion`, or with no JS and no animation support at all, the
- * rail renders complete in its first frame.
+ * Every resting state is still declared in the markup — line drawn, segment
+ * complete, dot on CARE, all four stops lit. The animations only supply the way
+ * in and the standing signal, so with `prefers-reduced-motion`, or with no JS and
+ * no animation support at all, the rail renders complete in its first frame and
+ * holds there.
  */
 
 const STAGES = ["Request", "Dispatch", "Track", "Care"] as const;
@@ -44,31 +46,29 @@ const STEP = 100 / STAGES.length;
 const centre = (index: number) => STEP * index + STEP / 2;
 
 /**
- * The rail's clock, and the one place these numbers are written down. They are the
- * `rail-draw`, `rail-fill` and `rail-signal` values from the Tailwind config.
- *
- * The line does not leave until the entrance has: the CTAs finish arriving at
- * 740ms, so the label lands at 560ms and the line starts drawing at 820ms. The
- * whole route sequence — first pixel of line to the dot stopping on CARE — runs
- * 820ms to 2360ms, i.e. 1.54s.
- */
-const LABEL_FROM = 560;
-const LINE_FROM = 820;
-const LINE_MS = 520;
-const FILL_FROM = LINE_FROM + LINE_MS;
-const FILL_MS = 1020;
-
-/**
- * Where the signal is in the `rail-fill` / `rail-signal` keyframes when it draws
- * level with each stop. These are the keyframes' own percentage stops, so a node's
- * moment cannot drift out of step with the segment that reaches it.
+ * Where the signal is along its run when it draws level with each stop, 0 to 1.
+ * These are `rail-run`'s own stops in the fraction notation `calc()` can use: the
+ * signal advances for 28% of the run, holds for 6% at the stop it has reached, and
+ * goes again, so each stage is arrived at rather than passed through.
  */
 const ARRIVE = [0, 0.28, 0.62, 0.96] as const;
 
-/** When the signal reaches a stop, in milliseconds after first paint. */
-const arrivalAt = (index: number) => Math.round(FILL_FROM + ARRIVE[index] * FILL_MS);
+/** The stop's own position, handed to the CSS clock as `--rail-at`. */
+const at = (index: number) => ({ "--rail-at": ARRIVE[index] }) as CSSProperties;
 
-export function DispatchRail({ className }: { className?: string }) {
+export function DispatchRail({
+  align = "start",
+  className,
+}: {
+  /**
+   * Where the rail's own label sits. The line, its stops and the four stage names
+   * are a full-width grid and are unaffected — this is only the caption above
+   * them, which follows the section it is placed in: hung on the left in a
+   * left-aligned composition, over the middle in a centred one.
+   */
+  align?: "start" | "center";
+  className?: string;
+}) {
   const first = centre(0);
   const span = centre(STAGES.length - 1) - first;
 
@@ -76,12 +76,14 @@ export function DispatchRail({ className }: { className?: string }) {
     <section aria-labelledby="dispatch-rail-label" className={cn("hero-rail", className)}>
       <p
         id="dispatch-rail-label"
-        className="flex items-center gap-2.5 whitespace-nowrap text-[0.625rem] font-medium uppercase leading-none tracking-[0.18em] text-white/70 [text-shadow:0_1px_10px_rgba(10,17,41,0.9)] motion-safe:animate-rise-in sm:text-[0.6875rem] sm:tracking-[0.2em]"
-        style={{ animationDelay: `${LABEL_FROM}ms` }}
+        className={cn(
+          "flex items-center gap-2.5 whitespace-nowrap text-[0.625rem] font-medium uppercase leading-none tracking-[0.18em] text-white/70 [text-shadow:0_1px_10px_rgba(10,17,41,0.9)] motion-safe:animate-rise-in motion-safe:[animation-delay:560ms] sm:text-[0.6875rem] sm:tracking-[0.2em]",
+          align === "center" && "justify-center",
+        )}
       >
         {/* The live indicator: a red point with a soft halo around it, both static.
             The network is live, which is a state, not an event — a blinking light
-            would keep asking for attention long after the rail has settled. */}
+            here would compete with the signal running the rail below it. */}
         <span aria-hidden="true" className="relative flex h-[7px] w-[7px] shrink-0">
           <span className="absolute inset-0 rounded-full bg-red/25 blur-[1px]" />
           <span className="relative h-full w-full rounded-full bg-red" />
@@ -91,10 +93,7 @@ export function DispatchRail({ className }: { className?: string }) {
 
       <div aria-hidden="true" className="relative mt-4 h-[9px] w-full sm:mt-5">
         {/* The route itself: one thin neutral line, drawn left to right. */}
-        <span
-          className="absolute left-0 right-0 top-1/2 block h-px -translate-y-1/2 bg-white/25 motion-safe:animate-rail-draw"
-          style={{ animationDelay: `${LINE_FROM}ms` }}
-        />
+        <span className="absolute left-0 right-0 top-1/2 block h-px -translate-y-1/2 bg-white/25 motion-safe:animate-rail-draw motion-safe:[animation-delay:var(--rail-line)]" />
 
         {/* The completed leg, and the unit running it. The wrapper spans the first
             stop to the last, so the segment's own 0 → 100% is REQUEST → CARE and
@@ -104,37 +103,27 @@ export function DispatchRail({ className }: { className?: string }) {
           className="absolute top-1/2 block h-[2px] -translate-y-1/2"
           style={{ left: `${first}%`, width: `${span}%` }}
         >
-          <span
-            className="absolute inset-0 block bg-red motion-safe:animate-rail-fill"
-            style={{ animationDelay: `${FILL_FROM}ms` }}
-          />
-          <span
-            className="absolute inset-y-0 left-0 block w-full translate-x-full motion-safe:animate-rail-signal"
-            style={{ animationDelay: `${FILL_FROM}ms` }}
-          >
-            <span className="absolute left-0 top-1/2 block h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red shadow-[0_0_0_5px_rgba(237,28,36,0.2)]" />
+          <span className="rail-fill absolute inset-0 block bg-red" />
+          <span className="rail-run absolute inset-y-0 left-0 block w-full translate-x-full">
+            <span className="absolute left-0 top-1/2 block h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red shadow-[0_0_0_5px_rgba(237,28,36,0.2),0_0_14px_5px_rgba(237,28,36,0.4)]" />
           </span>
         </span>
 
         {STAGES.map((stage, index) => {
-          const moment = `${arrivalAt(index)}ms`;
           const last = index === STAGES.length - 1;
 
           return (
             <span
               key={stage}
-              className="absolute top-1/2 block h-0 w-0"
-              style={{ left: `${centre(index)}%` }}
+              className="hero-rail-stop absolute top-1/2 block h-0 w-0"
+              style={{ left: `${centre(index)}%`, ...at(index) }}
             >
-              {/* The stop acknowledging the signal as it passes: one ring, once.
-                  Transparent at both ends of its keyframe, so it is invisible
-                  before it fires, invisible after, and never painted at all when
-                  motion is reduced. */}
+              {/* The stop lighting up as the signal draws level with it: one ring
+                  out, every pass. Transparent at both ends of its keyframe, so it
+                  is invisible before it fires, invisible after, and never painted
+                  at all when motion is reduced. */}
               <span className="absolute left-0 top-0 block h-3 w-3 -translate-x-1/2 -translate-y-1/2">
-                <span
-                  style={{ animationDelay: moment }}
-                  className="block h-full w-full rounded-full border border-red opacity-0 motion-safe:animate-node-ping"
-                />
+                <span className="rail-ping block h-full w-full rounded-full border border-red/80 bg-red/25 opacity-0" />
               </span>
 
               {/* Two dots, not one changing colour: the neutral stop is always on
@@ -144,9 +133,8 @@ export function DispatchRail({ className }: { className?: string }) {
               <span className="absolute left-0 top-0 block h-[5px] w-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/40" />
               <span className="absolute left-0 top-0 block -translate-x-1/2 -translate-y-1/2">
                 <span
-                  style={{ animationDelay: moment }}
                   className={cn(
-                    "block h-[7px] w-[7px] rounded-full bg-red motion-safe:animate-node-in",
+                    "block h-[7px] w-[7px] rounded-full bg-red motion-safe:animate-node-in motion-safe:[animation-delay:var(--rail-moment)]",
                     // CARE is where the request comes to rest, so it keeps a soft
                     // static halo. A resting state, held — not a pulse.
                     last && "shadow-[0_0_0_6px_rgba(237,28,36,0.16)]",
@@ -165,10 +153,14 @@ export function DispatchRail({ className }: { className?: string }) {
         {STAGES.map((stage, index) => (
           <li
             key={stage}
-            style={{ animationDelay: `${arrivalAt(index)}ms` }}
             // The rail crosses the photograph as well as the navy, so each label
             // carries its own ground rather than relying on the bottom scrim.
-            className="text-center text-[0.625rem] font-medium uppercase leading-none tracking-[0.12em] text-white/90 [text-shadow:0_1px_10px_rgba(10,17,41,0.9)] motion-safe:animate-fade-in sm:tracking-[0.18em]"
+            //
+            // All four arrive together with the drawn line, not with the signal
+            // that reaches them: these are the section's words, and words that
+            // trickle in over three seconds are a reader waiting, not a sequence.
+            // The stops themselves still light as the signal gets to them.
+            className="text-center text-[0.625rem] font-medium uppercase leading-none tracking-[0.12em] text-white/90 [text-shadow:0_1px_10px_rgba(10,17,41,0.9)] motion-safe:animate-fade-in motion-safe:[animation-delay:var(--rail-lead)] sm:tracking-[0.18em]"
           >
             {stage}
           </li>

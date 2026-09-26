@@ -17,11 +17,18 @@ const ratios = {
    * The full-bleed plate. It opens up as the column widens rather than holding
    * one ratio: at phone width a 21/9 slice of a street scene is a letterbox with
    * nothing in it, and at desktop width a 4/3 plate is a wall. Three steps keep
-   * the subject roughly the same size on the page at every breakpoint — 4/3 while
+   * the subject roughly the same size on the page at every breakpoint — 3/2 while
    * the column is a phone's width, 16/9 once it is a tablet's, and the full
    * cinematic slice only where the column is wide enough to carry it.
+   *
+   * 3/2 rather than 4/3 at the narrow end because that is the native ratio of the
+   * photography this frame carries: across the full width of a phone's column the
+   * plate then shows the whole frame the photographer composed, cropped by nothing
+   * but the plate's own couple of percent of parallax overscale. A 4/3 box at the
+   * same width has to cut a third of the scene away to fill itself, and what it
+   * cuts is the sides — which on a street photograph is the street.
    */
-  plate: "aspect-[4/3] sm:aspect-[16/9] lg:aspect-[21/9]",
+  plate: "aspect-[3/2] sm:aspect-[16/9] lg:aspect-[21/9]",
 } as const;
 
 export type MediaRatio = keyof typeof ratios;

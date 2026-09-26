@@ -1,93 +1,138 @@
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { SignalRail } from "@/components/ui/Section";
 import { DispatchRail } from "@/components/illustrations/DispatchRail";
-import { hero } from "@/data/site";
+import { company, hero } from "@/data/site";
+import { asset } from "@/lib/asset";
 import { cn } from "@/lib/cn";
 
 /**
- * The hero is one full-width navy canvas rather than a column of text beside a
- * framed photograph: the grid, the ambulance and the type all share a plane, and
- * the photograph is masked into the navy rather than given an edge of its own.
+ * The hero is one cinematic frame: a night call, photographed head-on, with the
+ * whole content group standing centred on top of it.
  *
- * The dispatch route used to be a curve plotted diagonally across that whole
- * canvas, with CARE held off the top-right corner. It has been replaced by a
- * horizontal rail in normal flow beneath the actions — see DispatchRail. Two
- * things follow, and both are the point of the change: the four stages are read
- * left to right in the order they happen, and the section no longer has to
- * reserve a third of its height as clearance for a curve, so the whole hero now
- * fits a short laptop viewport with the rail above the fold.
+ * The composition that came before was a split — copy on the left, the ambulance
+ * masked into the navy on the right — and every layer it carried (the plotting
+ * grid, the lamp behind the vehicle, the grid's sweep, the dispatch annotation)
+ * existed to build depth the photograph did not have. The supplied photograph has
+ * its own depth: a wet road, a city behind, headlights and a lit bar. So those
+ * layers are gone rather than kept and dimmed. What is left is the photograph, one
+ * navy veil over it, the two roof lamps, and the type.
  *
- * The entrance is one sequence, read in the order the page is read:
+ * Height is `calc(100svh - header)`, as a *minimum* rather than a fixed height —
+ * `svh` so a phone's collapsing toolbar cannot crop the rail, and a minimum so a
+ * short window or a large font grows the section instead of clipping it.
  *
- *   0ms     eyebrow
- *   90ms    headline line one          180ms  the ambulance is wiped in from the right
- *   170ms   headline line two
- *   220ms   rule
- *   260ms   the sentence
- *   320ms   the actions                → all usable by 740ms
+ * Three things are stacked and they never cross:
+ *
+ *   `.hero-stage`   the photograph, the veil and the roof lamps, in one box that
+ *                   carries the standing scale so all three move together and the
+ *                   lamps cannot slide off the light bar.
+ *   the copy group   logo, eyebrow, headline, sentence, actions — centred in what
+ *                   is left after the rail, so the vertical centre is the copy's
+ *                   own, not the section's.
+ *   the rail         held at the bottom edge at every width.
+ *
+ * The entrance is a single staggered sequence and it is over at 1.12s:
+ *
+ *   0ms     the logo mark
+ *   90ms    the eyebrow
+ *   170ms   headline line one
+ *   250ms   headline line two
+ *   340ms   the sentence
+ *   410ms   the actions                → everything usable by 830ms
  *   560ms   the rail's operational label
- *   820ms   the rail draws, and runs one signal REQUEST → CARE, settling at 2.36s
+ *   700ms   the rail draws (420ms) — and the standing signal leaves REQUEST at 1.12s
  *
- * Nothing loops. The two things still moving after the actions are usable are the
- * rail's single run and the photograph's 1.2% settle, and both stop for good —
- * a canvas that keeps drifting is a screensaver, and this section is meant to read
- * as an instrument that has finished taking its reading.
+ * After that, three things loop and none of them finishes: the rail's signal on a
+ * 4s cycle (DispatchRail holds that clock), the two roof lamps breathing over
+ * 4.4s, and a 5% scale swell on the whole stage over 32s. Nothing floats, blinks
+ * or flashes. Under `prefers-reduced-motion` none of the three is declared at all
+ * and the markup's own resting state is what shows: photograph at rest, both lamps
+ * lit, the route drawn and the signal parked on CARE.
  */
 export function Hero() {
   return (
-    <section className="hero-canvas relative isolate overflow-hidden bg-navy-ink pb-9 pt-14 text-white sm:pb-10 sm:pt-16 lg:pb-11 lg:pt-[4.5rem]">
-      {/* Ground plane: the plotting grid the whole canvas is drawn on. */}
-      <div aria-hidden="true" className="grid-field pointer-events-none absolute inset-0" />
-
-      {/* The ambulance, masked into the navy instead of framed. On mobile it rises
-          out of the bottom edge of the canvas; from lg it is anchored to the right
-          edge and bleeds off it. The wipe uncovers it from that right edge inwards,
-          which is the direction it is already bleeding from. */}
+    <section className="hero-canvas relative isolate flex flex-col overflow-hidden bg-navy-ink text-white">
+      {/* The photograph, its veil and its two lamps, in one box.
+          
+          They share a box because they have to: the lamps are pinned to points in
+          the photograph using the box's own container units, so anything that moves
+          the photograph has to move them by the same amount. The standing scale is
+          therefore on this wrapper and not on the image — one transform, applied
+          once, to all three. */}
       <div
-        className="hero-plate pointer-events-none absolute inset-x-0 bottom-0 h-[15rem] mix-blend-luminosity motion-safe:animate-plate-wipe sm:h-[18rem] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[62%]"
+        aria-hidden="true"
+        className="hero-stage pointer-events-none absolute inset-0 motion-safe:animate-bg-drift"
       >
         <Image
-          src={hero.image.src}
-          alt={hero.image.alt}
+          src={asset(hero.background.src)}
+          alt={hero.background.alt}
           fill
           priority
-          sizes="(min-width: 1024px) 62vw, 100vw"
-          className="object-cover object-[50%_44%] opacity-[0.58] contrast-[1.1] motion-safe:animate-plate-drift lg:object-[46%_50%]"
+          // Not `100vw`. The frame is portrait on a phone and the photograph is
+          // 16:9, so `object-cover` fits the *height* and the rendered width runs
+          // well past the viewport — about 1370px inside a 390px frame. A `100vw`
+          // hint would ask for a 390px file and stretch it three and a half times.
+          // These three are that rendered width (H x 1.777, or the frame's own
+          // width on a wide desktop) rounded up to the nearest size Next emits.
+          sizes="(max-width: 480px) 1200px, (max-width: 1024px) 1600px, 1920px"
+          // Centred on both axes at every width, which is what keeps the vehicle
+          // centred in the frame: it is centred in the source, so a 50% crop
+          // window is always the one that holds it. The crop maths the lamps are
+          // positioned by assumes exactly this — see `.hero-beacon` in globals.css.
+          className="object-cover object-center motion-safe:animate-fade-in motion-safe:[animation-duration:900ms]"
         />
+
+        {/* One navy veil, not a flat wash: darkest along the top where the type
+            stands, thinnest across the band the vehicle occupies, and heavy again
+            at the very bottom so the rail has ground. The lamps are painted after
+            it, so the only things on the canvas the veil does not touch are the
+            two lights. */}
+        <div className="hero-veil absolute inset-0" />
+
+        <span className="hero-beacon hero-beacon--red" />
+        <span className="hero-beacon hero-beacon--blue" />
       </div>
 
-      {/* Two scrims, not decoration: one keeps the headline off the vehicle, the
-          other keeps the rail and its labels legible along the bottom. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-0 hidden w-[78%] bg-gradient-to-r from-navy-ink via-navy-ink/80 to-transparent lg:block"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%] bg-gradient-to-t from-navy-ink via-navy-ink/70 to-transparent"
-      />
+      <div className="hero-shell shell relative flex min-h-0 flex-1 flex-col pb-7 pt-9 sm:pb-8 sm:pt-11 lg:pb-10 lg:pt-14">
+        {/* Centred across the frame and held to the top of it, which is the whole
+            composition in one line: the type owns the sky, the vehicle owns the
+            road under it, and neither is asked to share.
 
-      {/* The one vertical red signal line. */}
-      <SignalRail tone="dark" />
+            Not vertically centred, at any width. The photograph puts the light bar
+            at 57% of the frame's height and it stays there — the vehicle is
+            centred in the source, so `object-cover` has no vertical slack to give
+            on any frame narrower than 16:9. A group centred in the section would
+            therefore lay its sentence across the light bar on every ordinary
+            desktop window, which is exactly what it did before this line. */}
+        <div className="hero-copy flex min-h-0 flex-1 flex-col items-center justify-start text-center">
+          <Image
+            src={asset("/brand/medurun-logo.png")}
+            alt={`${company.name} logo`}
+            width={56}
+            height={56}
+            priority
+            className="h-11 w-11 shrink-0 motion-safe:animate-rise-in sm:h-[3.25rem] sm:w-[3.25rem]"
+          />
 
-      <div className="shell relative">
-        <div className="lg:w-[47%] xl:w-[45%]">
-          <p className="op-label op-label--rail motion-safe:animate-rise-in">
-            <span>{hero.eyebrow}</span>
+          <p className="hero-eyebrow mt-5 flex items-center gap-3 text-[0.625rem] font-medium uppercase leading-none tracking-[0.26em] text-white/70 motion-safe:animate-rise-in motion-safe:[animation-delay:90ms] sm:text-[0.6875rem] sm:tracking-[0.3em]">
+            {/* The same red tick every operational label on the page carries, given
+                a second copy so it reads as centred rather than left-hung. */}
+            <span aria-hidden="true" className="h-px w-5 shrink-0 bg-red sm:w-7" />
+            {hero.eyebrow}
+            <span aria-hidden="true" className="h-px w-5 shrink-0 bg-red sm:w-7" />
           </p>
 
           {/* A grid rather than a block: each line is its own mask, and grid items
               do not collapse the negative margins those masks depend on. */}
-          <h1 className="hero-head mt-7 grid text-[2.6rem] leading-[1.02] sm:text-[3.5rem] lg:text-[4.15rem]">
+          <h1 className="hero-head mt-6 grid text-[2.3rem] leading-[1.04] sm:text-[3.25rem] lg:text-[4rem] xl:text-[4.35rem]">
             <span className="hero-line">
-              <span className="motion-safe:animate-line-rise motion-safe:[animation-delay:90ms]">
+              <span className="motion-safe:animate-line-rise motion-safe:[animation-delay:170ms]">
                 {hero.headline.before}
               </span>
             </span>
             <span className="hero-line">
-              <span className="motion-safe:animate-line-rise motion-safe:[animation-delay:170ms]">
+              <span className="motion-safe:animate-line-rise motion-safe:[animation-delay:250ms]">
                 <em className="not-italic text-red">
                   <span className="font-serif italic">{hero.headline.accent}</span>
                 </em>
@@ -96,16 +141,14 @@ export function Hero() {
             </span>
           </h1>
 
-          <div
-            aria-hidden="true"
-            className="hero-rule mt-8 h-px w-full max-w-sm bg-white/15 motion-safe:animate-rise-in motion-safe:[animation-delay:220ms]"
-          />
-
-          <p className="mt-6 max-w-md text-base leading-relaxed text-white/[0.78] motion-safe:animate-rise-in motion-safe:[animation-delay:260ms] sm:text-lg">
+          <p className="hero-sub mt-6 max-w-[34rem] text-balance text-[0.9375rem] leading-relaxed text-white/[0.82] motion-safe:animate-rise-in motion-safe:[animation-delay:340ms] sm:text-lg">
             {hero.subhead}
           </p>
 
-          <div className="hero-actions mt-9 flex flex-wrap gap-3 motion-safe:animate-rise-in motion-safe:[animation-delay:320ms]">
+          {/* Stacked on a phone, side by side from 420px — the width at which the
+              two labels stop having to wrap inside their own buttons. Centred in
+              both arrangements. */}
+          <div className="hero-actions mt-8 flex w-full max-w-[19rem] flex-col items-stretch gap-3 motion-safe:animate-rise-in motion-safe:[animation-delay:410ms] min-[420px]:max-w-none min-[420px]:flex-row min-[420px]:justify-center">
             <Button
               href={hero.primaryCta.href}
               variant="primary"
@@ -130,10 +173,9 @@ export function Hero() {
           </div>
         </div>
 
-        {/* The rail is a sibling of the copy column, not a child of it, so it
-            spans the shell across both the text and the ambulance as one
-            connected system. Beneath both buttons at every width. */}
-        <DispatchRail className="mt-12 sm:mt-14 lg:mt-16" />
+        {/* Held at the bottom edge of the frame at every width, spanning the whole
+            shell under the centred group. */}
+        <DispatchRail align="center" className="mt-9 shrink-0 sm:mt-10" />
       </div>
     </section>
   );

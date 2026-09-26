@@ -43,7 +43,7 @@ export function About() {
         </Reveal>
       </div>
 
-      <div className="mt-8 lg:mt-10">
+      <div className="mt-9 lg:mt-10">
         {/* The plate carries its own reveal — a horizontal mask and a couple of
             percent of parallax — rather than riding the page's generic fade, so it
             is uncovered at full contrast instead of arriving faint. */}
@@ -51,7 +51,7 @@ export function About() {
           src={about.image.src}
           alt={about.image.alt}
           caption={about.caption}
-          sizes="(min-width: 1024px) 76vw, 92vw"
+          sizes="(min-width: 1024px) 80vw, 96vw"
         />
       </div>
     </Section>

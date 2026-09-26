@@ -5,6 +5,10 @@
 @layer base {
   :root {
     --shell-gutter: 1.25rem;
+    /* The sticky header's height, in one place. The header sets its own box from
+       this and the hero subtracts it from the viewport, so the two cannot drift
+       apart and leave the hero a header's worth too tall. */
+    --header-h: 4.5rem;
   }
 
   html {
@@ -217,26 +221,61 @@
     display: block;
   }
 
-  /* Short desktop viewports — a 1366×768 laptop with a full browser frame, or any
-     window a user has made wide and shallow. The hero is content-sized, so on a
-     700px viewport the rail's labels would otherwise finish about 20px below the
-     fold, and a dispatch route whose last stop you have to scroll to is not a
-     dispatch route. Nothing is removed or reflowed: the section's own vertical
-     rhythm is compressed by 96px, which brings the whole hero — rail included —
-     back above the fold with room to spare — verified down to a 660px viewport,
-     which is a 1366×768 laptop with a full browser frame. The type scale is
-     untouched: nothing is removed, reflowed or resized, only tightened. */
-  @media (min-width: 1024px) and (max-height: 760px) {
-    .hero-canvas {
-      padding-top: 2.25rem;
+  /* ---------------------------------------------------------------------------
+     The hero frame.
+
+     One screen minus the header, as a MINIMUM height rather than a fixed one.
+     Both halves of that matter:
+
+     `svh` rather than `vh` — on a phone `vh` is the *largest* viewport, the one
+     with the browser chrome collapsed, so a `vh`-sized hero is taller than the
+     screen for as long as the toolbar is showing and the rail spends the first
+     scroll underneath it. `svh` is the smallest viewport, which is the one that
+     is always real. The `vh` line above it is the fallback for a browser without
+     the unit, and overshoots by the toolbar rather than undershooting.
+
+     `min-height` rather than `height` — a short window, a long translation or a
+     reader's larger font all make the content taller than a screen, and a section
+     that is allowed to grow pushes the page down where a fixed one would clip the
+     buttons. The layout is a flex column, so on every ordinary viewport the extra
+     space is distributed and the rail still sits on the bottom edge.
+     --------------------------------------------------------------------------- */
+  .hero-canvas {
+    min-height: calc(100vh - var(--header-h));
+    min-height: calc(100svh - var(--header-h));
+  }
+
+  /* Desktop frames that are shorter than they are tall enough for, in two steps.
+
+     The thing being protected is the same at both: the light bar sits at 57% of
+     the frame's height and cannot be moved — the vehicle is centred in the source,
+     so `object-cover` has no vertical slack to give on any frame narrower than
+     16:9 — while the group's height is fixed by its type. Below about 940px of
+     viewport the two meet, and the actions end up laid across the roof.
+
+     So the group's own rhythm is compressed rather than anything being removed or
+     reflowed. The first step tightens the gaps and keeps the full type scale; the
+     second, for a 1366x768 or 1280x800 laptop, takes the headline down with them
+     and buys another 60px, which is also what keeps the rail above the fold. Both
+     thresholds are ~70px above the frame height they are protecting, because the
+     header has already taken that much of the viewport.
+
+     Verified from 1920x1080 down to a 660px viewport. */
+  @media (min-width: 1024px) and (max-height: 940px) {
+    .hero-canvas .hero-shell {
+      padding-top: 3rem;
+    }
+
+    .hero-canvas .hero-eyebrow {
+      margin-top: 1.125rem;
     }
 
     .hero-canvas .hero-head {
-      margin-top: 1.25rem;
+      margin-top: 1.375rem;
     }
 
-    .hero-canvas .hero-rule {
-      margin-top: 1.5rem;
+    .hero-canvas .hero-sub {
+      margin-top: 1.375rem;
     }
 
     .hero-canvas .hero-actions {
@@ -248,72 +287,325 @@
     }
   }
 
-  /* The "how it works" stage. From lg, and only where motion is welcome, the steps
-     and the route pin under the header for a little over three screens of scroll,
-     and the page's own scrollbar becomes the thing that advances them: the section
-     is given 320vh of height and the stage inside it fills one screen, so the ~225vh
-     difference is the scroll the four steps are mapped onto. The height lives here
-     rather than in the component because the component measures it — it reads the
-     track's height and the stage's `top` off the DOM, so this is the only place
-     either number is written down.
-
-     Below lg the two rules simply do not apply: the section is its own height, the
-     stage is not pinned, and the steps are a plain vertical list the reader taps.
-     Under `prefers-reduced-motion` the same is true at every width — a stage whose
-     whole point is that things move as you scroll has nothing to offer a reader who
-     has asked for less of that, so it is not built rather than built and stilled. */
-  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-    .how-track {
-      height: 320vh;
+  @media (min-width: 1024px) and (max-height: 800px) {
+    .hero-canvas .hero-shell {
+      padding-top: 2.25rem;
     }
 
-    /* Pinned at the header's own height, and a screen tall, so the stage is exactly
-       the space below the header. The content is centred in it rather than sized to
-       it: the steps keep their own rhythm and the air falls above and below them. */
-    .how-stage {
-      position: sticky;
-      top: 4.5rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: calc(100vh - 4.5rem);
+    .hero-canvas .hero-eyebrow {
+      margin-top: 1rem;
+    }
+
+    .hero-canvas .hero-head {
+      margin-top: 1.25rem;
+      font-size: 3.05rem;
+    }
+
+    .hero-canvas .hero-sub {
+      margin-top: 1.25rem;
+    }
+
+    .hero-canvas .hero-actions {
+      margin-top: 1.5rem;
+    }
+
+    .hero-canvas .hero-rail {
+      margin-top: 1.5rem;
     }
   }
 
-  /* The ambulance plate on the dispatch canvas. The photograph is never framed:
-     it is masked straight into the navy so it has no edge of its own. On mobile
-     it rises out of the bottom edge of the hero; from lg it is anchored to the
-     right edge and falls away in every other direction from a hot spot over the
-     vehicle, which is what lets the route line cross behind it. */
-  .hero-plate {
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(0, 0, 0, 0.5) 44%,
-      #000 76%
-    );
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(0, 0, 0, 0.5) 44%,
-      #000 76%
+  /* ---------------------------------------------------------------------------
+     The stage: the photograph, its veil and its two roof lamps.
+
+     One box, because the lamps are pinned to points *in the photograph* and have
+     to travel with it. It declares `container-type: size`, which is what makes
+     that possible: container units are the only way to write object-cover crop
+     maths, since an element cannot read its own size inside `calc()`.
+
+     The photograph is 1672x941, so its aspect R is 1.77684 and 1/R is 0.5628.
+     Drawn `object-cover` with `object-position: 50% 50%` into a box W x H, it is
+     rendered at
+
+         Wr = max(W, H . R)        Hr = max(H, W / R)
+
+     and, because a 50%/50% object-position puts the image's centre on the box's
+     centre and scales uniformly around it, a point (x, y) of the image lands at
+
+         left = (x - 0.5) . Wr + W/2        top = (y - 0.5) . Hr + H/2
+
+     The two roof clusters were measured off the source at (0.4765, 0.5668) for the
+     red and (0.5263, 0.5685) for the blue, and every coefficient below is those
+     numbers put through that formula — `50cqw` is W/2, `50cqh` is H/2, and the
+     `max()` pair is Wr and Hr in container units. The plain percentage above each
+     `calc()` is the fallback for a browser without size containers: it is the
+     formula's answer at a typical desktop frame, which puts the lamp within a few
+     pixels of the light bar rather than on it.
+
+     Their diameters are a share of Wr rather than a fixed rem, for the same
+     reason: the light bar itself scales with Wr, so a lamp measured in rem would
+     swamp it on a phone and disappear on a wide monitor. The two centres are 5% of
+     Wr apart, which is what caps the diameters here at a little over 7% — wider
+     and the pair merges into one purple blur instead of reading as red and blue.
+
+     They blend in `screen`, which is what a light bloom does: it can only add
+     light, never subtract it, so the lamps lift the bar back through the veil
+     without laying a coloured film over the bodywork around it.
+     --------------------------------------------------------------------------- */
+  .hero-stage {
+    container-type: size;
+  }
+
+  /* The navy overlay, in two passes. The linear one is the working layer: heavy
+     along the top where the type stands, at its thinnest across the band the
+     vehicle occupies — so the headlights and the light bar come through more or
+     less untouched — and heavy again at the bottom edge so the rail has ground.
+     The radial is a plain vignette that leaves the middle alone; it takes the
+     corners, where the photograph's own street lights would otherwise pull the eye
+     off the centred group. */
+  .hero-veil {
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(10, 17, 41, 0.9) 0%,
+        rgba(10, 17, 41, 0.79) 26%,
+        rgba(10, 17, 41, 0.54) 44%,
+        rgba(10, 17, 41, 0.31) 56%,
+        rgba(10, 17, 41, 0.35) 74%,
+        rgba(10, 17, 41, 0.74) 90%,
+        rgba(10, 17, 41, 0.93) 100%
+      ),
+      radial-gradient(
+        118% 78% at 50% 62%,
+        transparent 34%,
+        rgba(10, 17, 41, 0.44) 100%
+      );
+  }
+
+  /* Below lg the frame is portrait, the group is taller relative to it, and it is
+     pulled to the top of the space above the rail — so the type reaches further
+     down the photograph than it does on a desktop frame and the veil has to hold
+     its weight further down with it. The vehicle's band is still the lightest part
+     of it, only narrower. */
+  @media (max-width: 1023px) {
+    .hero-veil {
+      background-image:
+        linear-gradient(
+          to bottom,
+          rgba(10, 17, 41, 0.91) 0%,
+          rgba(10, 17, 41, 0.86) 32%,
+          rgba(10, 17, 41, 0.72) 50%,
+          rgba(10, 17, 41, 0.46) 64%,
+          rgba(10, 17, 41, 0.38) 78%,
+          rgba(10, 17, 41, 0.76) 91%,
+          rgba(10, 17, 41, 0.94) 100%
+        ),
+        radial-gradient(
+          130% 62% at 50% 68%,
+          transparent 30%,
+          rgba(10, 17, 41, 0.4) 100%
+        );
+    }
+  }
+
+  .hero-beacon {
+    position: absolute;
+    border-radius: 9999px;
+    translate: -50% -50%;
+    mix-blend-mode: screen;
+    /* The lamps' resting state, which is what a reader who has asked for less
+       motion is left with: both lit. The pulse below only varies this. */
+    opacity: 0.82;
+  }
+
+  .hero-beacon--red {
+    left: 47.6%;
+    left: calc(50cqw - 0.0235 * max(100cqw, 177.684cqh));
+    top: 56.7%;
+    top: calc(50cqh + 0.0668 * max(100cqh, 56.28cqw));
+    height: 7.4cqw;
+    width: 7.4cqw;
+    height: calc(0.074 * max(100cqw, 177.684cqh));
+    width: calc(0.074 * max(100cqw, 177.684cqh));
+    background-image: radial-gradient(
+      closest-side,
+      rgba(255, 82, 88, 0.66) 0%,
+      rgba(222, 28, 36, 0.32) 42%,
+      rgba(214, 26, 34, 0) 74%
     );
   }
 
-  @media (min-width: 1024px) {
-    .hero-plate {
-      -webkit-mask-image: radial-gradient(
-        102% 62% at 80% 56%,
-        #000 14%,
-        rgba(0, 0, 0, 0.72) 40%,
-        transparent 74%
-      );
-      mask-image: radial-gradient(
-        102% 62% at 80% 56%,
-        #000 14%,
-        rgba(0, 0, 0, 0.72) 40%,
-        transparent 74%
-      );
+  .hero-beacon--blue {
+    left: 52.7%;
+    left: calc(50cqw + 0.0263 * max(100cqw, 177.684cqh));
+    top: 56.9%;
+    top: calc(50cqh + 0.0685 * max(100cqh, 56.28cqw));
+    height: 6.8cqw;
+    width: 6.8cqw;
+    height: calc(0.068 * max(100cqw, 177.684cqh));
+    width: calc(0.068 * max(100cqw, 177.684cqh));
+    background-image: radial-gradient(
+      closest-side,
+      rgba(112, 170, 255, 0.62) 0%,
+      rgba(44, 104, 228, 0.3) 42%,
+      rgba(40, 96, 220, 0) 74%
+    );
+  }
+
+  /* A long, even breath - 4.4s out and back, with the blue lamp half a cycle
+     behind the red so the pair alternates the way a real light bar does. Slow
+     enough to read as a beacon turning, never as a flash. */
+  @keyframes beacon-pulse {
+    0%,
+    100% {
+      opacity: 0.52;
+      scale: 0.94;
+    }
+
+    50% {
+      opacity: 1;
+      scale: 1.06;
+    }
+  }
+
+  /* ---------------------------------------------------------------------------
+     The dispatch rail's standing signal.
+
+     One clock, declared once, drives every moving part of the rail: the route's
+     red segment, the signal running it, and each stop's ring. `--rail-cycle` is
+     the whole loop and `--rail-travel` the share of it the signal spends moving —
+     the remainder is the pause at CARE before the next run. Stops are timed off
+     those two numbers rather than off a table of milliseconds, so nothing can
+     drift out of step: a stop fires at `lead + cycle · travel · at`, where `at` is
+     where that stop sits along the run and is the only value the component sets.
+
+     `rail-run`'s keyframes carry `--rail-travel` in the one notation keyframes do
+     not accept variables in — percentages. 42% there and 0.42 here are the same
+     number; change one and change the other, and with them the stop percentages,
+     which are `ARRIVE × 42%` from the component.
+
+     A 4s cycle puts the signal on CARE at 2.73s and leaves a 2.3s beat before it
+     goes again. That is not an arbitrary pace: it holds the route's original
+     establishing cadence exactly — REQUEST at 1.12s, CARE at 2.73s — so the four
+     labels still arrive with the stop each one names instead of trickling in over
+     five seconds, which is what a slower loop would have cost.
+
+     The loop is seamless because the signal is transparent at both ends of the
+     cycle: the jump back to REQUEST happens while there is nothing on screen to
+     see it. The red segment is drawn once, by the first run, and then stays — the
+     network does not un-establish itself between calls.
+     --------------------------------------------------------------------------- */
+  .hero-rail {
+    --rail-cycle: 4s;
+    --rail-travel: 0.42;
+    /* The line does not leave until the headline, the buttons and the rail's own
+       label have landed; it draws in the 420ms before the lead, so the signal
+       starts the moment the route exists — and the entrance is over at 1.12s. */
+    --rail-line: 0.7s;
+    --rail-lead: 1.12s;
+    /* Where a stop sits along the run, 0 to 1. Set per stop from the component. */
+    --rail-at: 0;
+  }
+
+  .hero-rail-stop {
+    --rail-moment: calc(
+      var(--rail-lead) + var(--rail-cycle) * var(--rail-travel) * var(--rail-at)
+    );
+  }
+
+  @keyframes rail-fill {
+    0% {
+      clip-path: inset(0 100% 0 0);
+    }
+
+    28%,
+    34% {
+      clip-path: inset(0 66.667% 0 0);
+    }
+
+    62%,
+    68% {
+      clip-path: inset(0 33.333% 0 0);
+    }
+
+    96%,
+    100% {
+      clip-path: inset(0);
+    }
+  }
+
+  @keyframes rail-run {
+    0% {
+      transform: translateX(0);
+      opacity: 0;
+    }
+
+    2% {
+      opacity: 1;
+    }
+
+    11.76%,
+    14.28% {
+      transform: translateX(33.333%);
+    }
+
+    26.04%,
+    28.56% {
+      transform: translateX(66.667%);
+    }
+
+    40.32% {
+      transform: translateX(100%);
+      opacity: 1;
+    }
+
+    /* The extra 3.7% is the landing, not travel: the signal is already on CARE at
+       40.32% and spends 150ms being absorbed by it rather than being cut. */
+    44%,
+    100% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes rail-ping {
+    0% {
+      transform: scale(0.5);
+      opacity: 0;
+    }
+
+    2.75% {
+      opacity: 0.55;
+    }
+
+    12.5%,
+    100% {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .rail-fill {
+      animation: rail-fill calc(var(--rail-cycle) * var(--rail-travel))
+        cubic-bezier(0.4, 0, 0.2, 1) var(--rail-lead) both;
+    }
+
+    .rail-run {
+      animation: rail-run var(--rail-cycle) cubic-bezier(0.4, 0, 0.2, 1)
+        var(--rail-lead) infinite both;
+    }
+
+    .rail-ping {
+      animation: rail-ping var(--rail-cycle) cubic-bezier(0.22, 1, 0.36, 1)
+        var(--rail-moment) infinite both;
+    }
+
+    .hero-beacon {
+      animation: beacon-pulse 4.4s cubic-bezier(0.37, 0, 0.63, 1) 0.62s infinite;
+    }
+
+    .hero-beacon--blue {
+      animation-delay: 2.82s;
     }
   }
 
@@ -472,6 +764,91 @@
      been reached yet still has to be readable while the line is drawing past it. */
   .js .flow[data-run="false"] .flow-label {
     opacity: 0.72;
+  }
+
+  /* ---------------------------------------------------------------------------
+     The standing signal.
+
+     Once the band has drawn itself the schematic keeps routing: one red dot runs
+     the rail and every node rings as the dot reaches it, stage after stage, then
+     the band rests and the next request goes through.
+
+     It is one cycle, not six loops running alongside each other. The dot's
+     duration IS the cycle, and each node's ring is that same duration offset by
+     how far along the run its node sits, so the sequence cannot drift out of step
+     however long the page is left open.
+
+     The cycle is longer than the run it contains: the dot travels for the first
+     `--flow-travel` of it, and the remainder is the pause before the next pass.
+     Both ends of the travel are at `opacity: 0`, which is what makes the wrap
+     invisible — the dot fades in on the first node, out on the last, and the
+     return to the start happens while there is nothing on screen to jump.
+     --------------------------------------------------------------------------- */
+  .flow {
+    --flow-cycle: 9s;
+    /* The share of the cycle spent moving. Read together with the travel window
+       in `flow-signal`: the same number in the two notations CSS gives us. */
+    --flow-travel: 0.68;
+    /* Held until the rail has drawn itself (0.72s), so the first pass runs along a
+       finished line instead of racing the edge that is drawing it. */
+    --flow-lead: 0.9s;
+    /* Where a node sits along the run, 0 to 1. Set per node from the component;
+       named here so the delay below is always a valid length. */
+    --flow-at: 0;
+  }
+
+  @keyframes flow-signal {
+    0% {
+      transform: translateX(0);
+      opacity: 0;
+    }
+    3% {
+      opacity: 1;
+    }
+    65% {
+      opacity: 1;
+    }
+    /* The travel window closes at 68%; the dot then waits out the rest of the
+       cycle parked on the last node at zero opacity. */
+    68%,
+    100% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  /* A ring, not a change of colour: each node's own contrast holds steady, so the
+     sequence reads as something passing through the network rather than as five
+     lights blinking. 13% of the cycle is a little over a second. */
+  @keyframes flow-ping {
+    0% {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    2% {
+      opacity: 0.5;
+    }
+    13%,
+    100% {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+  }
+
+  /* Named only where motion is welcome. Under `prefers-reduced-motion` neither
+     rule exists, so there is no loop to clamp — and both elements carry
+     `motion-reduce:hidden`, so nothing is left sitting on the rail either. */
+  @media (prefers-reduced-motion: no-preference) {
+    .flow-signal {
+      animation: flow-signal var(--flow-cycle) linear var(--flow-lead) infinite both;
+    }
+
+    .flow-ping {
+      animation: flow-ping var(--flow-cycle) linear infinite both;
+      animation-delay: calc(
+        var(--flow-lead) + var(--flow-cycle) * var(--flow-travel) * var(--flow-at)
+      );
+    }
   }
 
   /* ---------------------------------------------------------------------------

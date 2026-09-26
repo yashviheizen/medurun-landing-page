@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/cn";
 import type { FlowStage } from "@/data/site";
 
@@ -19,11 +19,14 @@ import type { FlowStage } from "@/data/site";
  * because a network diagram that reorders the operation to look symmetrical is
  * describing a different operation.
  *
- * The band routes one request when it is first read, and then stops. The rail draws
- * left to right, the five stages come on in order behind the drawing edge, and a
- * single red signal runs the length of it — once. After that the only thing left
- * moving is a slow, faint ring on the hub: a network idling, not an indicator
- * demanding attention.
+ * The band routes its first request when it is first read: the rail draws left to
+ * right and the five stages come on in order behind the drawing edge. From then on
+ * it keeps routing. One red signal runs the rail and each node rings as the signal
+ * reaches it, stage after stage; the band then rests for a third of the cycle and
+ * the next request goes through. Both ends of the run are transparent, so the loop
+ * has no seam to see — a network working steadily, not an indicator demanding
+ * attention. The cycle itself is declared in globals.css (`--flow-cycle`); all this
+ * component contributes is where each node sits along the run.
  *
  * Nothing here dims a label below 0.55, so every stage is readable at every point
  * of the sequence. The hidden states are scoped to `.js .flow[data-run="false"]`
@@ -37,6 +40,9 @@ const halfColumn = (count: number) => 100 / count / 2;
 /** Behind the rail's own draw, then one stage every 130ms. */
 const STAGE_FROM = 120;
 const STAGE_STEP = 130;
+
+/** Where a stage sits along the run, 0 to 1 — the offset its ring is timed from. */
+const along = (index: number, count: number) => index / Math.max(count - 1, 1);
 
 export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
   const inset = halfColumn(stages.length);
@@ -83,7 +89,7 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
           className="absolute inset-y-0 block"
           style={{ left: `${inset}%`, right: `${inset}%` }}
         >
-          <span className="flow-rail absolute inset-x-0 top-0 block border-t border-dashed border-navy/30" />
+          <span className="flow-rail absolute inset-x-0 top-0 block border-t border-dashed border-navy/45" />
 
           {/* The travelling signal. The moving wrapper spans the rail exactly, so a
               100% translate lands the dot on the last node — and that overshoot has
@@ -93,8 +99,8 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
               the first and last nodes, and nothing else. */}
           <span className="absolute -left-2 -top-2 block h-4 w-[calc(100%+1rem)] overflow-hidden">
             {run ? (
-              <span className="absolute inset-y-0 left-2 block w-[calc(100%-1rem)] motion-safe:animate-flow-run motion-reduce:hidden">
-                <span className="absolute left-0 top-1/2 block h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red shadow-[0_0_0_4px_rgba(237,28,36,0.14)]" />
+              <span className="flow-signal absolute inset-y-0 left-2 block w-[calc(100%-1rem)] motion-reduce:hidden">
+                <span className="absolute left-0 top-1/2 block h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red shadow-[0_0_0_4px_rgba(237,28,36,0.16),0_0_10px_3px_rgba(237,28,36,0.2)]" />
               </span>
             ) : null}
           </span>
@@ -104,6 +110,9 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
       <ol className="relative flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-0">
         {stages.map((stage, index) => {
           const delay = `${STAGE_FROM + index * STAGE_STEP}ms`;
+          // Handed to the rings as a custom property: the cycle in globals.css turns
+          // it into this node's share of the run, and nothing here knows a duration.
+          const at = { "--flow-at": along(index, stages.length).toFixed(4) } as CSSProperties;
 
           return (
             <li
@@ -117,24 +126,33 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
                 <span
                   aria-hidden="true"
                   style={{ transitionDelay: delay }}
-                  className="flow-seg absolute left-[7px] top-2 block h-[calc(100%+1.5rem)] w-px border-l border-dashed border-navy/30 lg:hidden"
+                  className="flow-seg absolute left-[7px] top-2 block h-[calc(100%+1.5rem)] w-px border-l border-dashed border-navy/45 lg:hidden"
                 />
               ) : null}
 
-              <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+              <span className="relative flex h-4 w-4 shrink-0 items-center justify-center" style={at}>
+                {/* This stage acknowledging the signal: one ring out as the run
+                    reaches it, and nothing at all in between. It is the same
+                    animation on all five nodes, offset by `--flow-at`, which is what
+                    makes them fire in order rather than merely near each other —
+                    and it is what carries the sequence on the stacked mobile
+                    column, where there is no rail for a dot to run along. */}
+                {run ? (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "flow-ping absolute h-4 w-4 rounded-full motion-reduce:hidden",
+                      stage.hub ? "bg-red/30" : "bg-navy/20",
+                    )}
+                  />
+                ) : null}
+
                 {stage.hub ? (
                   <>
-                    {/* The network's resting beat, and the only thing on this band
-                        still moving once the request has been routed. It waits out
-                        the sequence before it starts — see `hub-pulse`. */}
-                    <span
-                      aria-hidden="true"
-                      className="absolute h-4 w-4 rounded-full bg-red/25 motion-safe:animate-hub-pulse"
-                    />
                     <span
                       aria-hidden="true"
                       style={{ transitionDelay: delay }}
-                      className="flow-node absolute h-4 w-4 rounded-full border border-red/30 bg-paper"
+                      className="flow-node absolute h-4 w-4 rounded-full border border-red/45 bg-paper"
                     />
                     <span
                       style={{ transitionDelay: delay }}
@@ -144,7 +162,7 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
                 ) : (
                   <span
                     style={{ transitionDelay: delay }}
-                    className="flow-node block h-[7px] w-[7px] rounded-full border border-navy/50 bg-paper"
+                    className="flow-node relative block h-2 w-2 rounded-full border border-navy/70 bg-paper"
                   />
                 )}
               </span>
