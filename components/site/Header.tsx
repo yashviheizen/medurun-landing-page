@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { company, nav } from "@/data/site";
+import { asset } from "@/lib/asset";
 import { cn } from "@/lib/cn";
 
 /**
@@ -189,7 +190,7 @@ export function Header() {
       <div className="shell flex h-[4.5rem] items-center justify-between gap-4">
         <Link href="/" className="flex shrink-0 items-center gap-2.5" onClick={close}>
           <Image
-            src="/brand/medurun-logo.png"
+            src={asset("/brand/medurun-logo.png")}
             alt={`${company.name} logo`}
             width={36}
             height={36}

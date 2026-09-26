@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Instrument_Serif } from "next/font/google";
 import { company } from "@/data/site";
+import { asset } from "@/lib/asset";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -19,6 +20,9 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://medurun.com"),
+  // Named explicitly so the sub-path build points at its own copy rather than
+  // the host's root, which is where a browser looks for /favicon.ico by default.
+  icons: { icon: asset("/favicon.ico") },
   title: `${company.name} — ${company.tagline}`,
   description:
     "MEDURUN is India's digital healthcare mobility platform connecting patients and hospitals with ambulance providers, medical agencies, and emergency response teams.",

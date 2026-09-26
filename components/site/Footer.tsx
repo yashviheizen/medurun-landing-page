@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { company, legalLinks, nav } from "@/data/site";
+import { asset } from "@/lib/asset";
 
 export function Footer() {
   const footerNav = [{ label: "Home", href: "/" }, ...nav];
@@ -12,7 +13,7 @@ export function Footer() {
           <div className="max-w-sm">
             <Link href="/" className="flex items-center gap-2.5">
               <Image
-                src="/brand/medurun-logo.png"
+                src={asset("/brand/medurun-logo.png")}
                 alt={`${company.name} logo`}
                 width={40}
                 height={40}
