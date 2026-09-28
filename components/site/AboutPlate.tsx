@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ImageReveal } from "@/components/ui/ImageReveal";
 import { Media } from "@/components/ui/Media";
 import { onScroll, pass, stilled, viewport } from "@/lib/motion";
 
@@ -112,7 +113,7 @@ export function AboutPlate({
       className="plate"
       data-run={run ? "true" : "false"}
     >
-      <div className="plate-clip relative overflow-hidden">
+      <ImageReveal className="relative overflow-hidden">
         <div ref={shift} className="plate-shift">
           <Media
             src={src}
@@ -123,7 +124,7 @@ export function AboutPlate({
             sizes={sizes}
           />
         </div>
-      </div>
+      </ImageReveal>
 
       {/* The plate's one line of caption, ruled off the same red tick every
           operational label on the page uses. It says what the photograph is a

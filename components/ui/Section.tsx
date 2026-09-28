@@ -75,12 +75,12 @@ export function Section({
 }
 
 /**
- * The beat between one line of a section opening and the next. Three lines at 90ms
- * puts the whole header on the frame inside its own 720ms transition — the number,
- * the headline and the sentence read as one arrival with an order to it, rather
- * than as three things queueing.
+ * The beat between one line of a section opening and the next. At 90ms the order
+ * was there but only just; 110ms is the point where a reader actually sees the
+ * number land before the headline does, and three lines still put the whole header
+ * on the frame inside its own 720ms transition rather than turning into a queue.
  */
-const STEP = 90;
+const STEP = 110;
 
 /**
  * Every band opens the same way: a numbered operational label hung off the signal

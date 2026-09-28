@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Media } from "@/components/ui/Media";
+import { ImageReveal } from "@/components/ui/ImageReveal";
 import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/cn";
 import { type Service } from "@/data/site";
@@ -315,7 +316,7 @@ export function ServiceExplorer({ items }: { items: Service[] }) {
                   the section is scrolled to, so no click ever lands on a frame that
                   has not decoded. `eager` and not `priority`: they start early but
                   never outrank the hero photograph. */}
-              <div className="clip-in-right">
+              <ImageReveal>
                 <Media
                   src={service.image.src}
                   alt={service.image.alt}
@@ -324,7 +325,7 @@ export function ServiceExplorer({ items }: { items: Service[] }) {
                   parallax={10}
                   sizes="(min-width: 1024px) 52vw, 92vw"
                 />
-              </div>
+              </ImageReveal>
               <p className="mt-6 max-w-xl text-[1.02rem] leading-relaxed text-muted">
                 {service.body}
               </p>
@@ -350,15 +351,22 @@ export function ServiceExplorer({ items }: { items: Service[] }) {
                 aria-label={`${service.number} of ${pad(items.length)}`}
               >
                 {/* The card carries the radius and the clip; the photograph inside it
-                    is square-framed so the two cannot disagree about the corner. */}
+                    is square-framed so the two cannot disagree about the corner.
+
+                    The plate gets the same reveal as every other photograph on the
+                    page even though these cards travel sideways: the row is reached
+                    by scrolling down like anything else, and the card being read is
+                    the only one on screen, so each one opens as it is swiped to. */}
                 <article className="flex h-full flex-col overflow-hidden rounded-[7px] border border-line bg-white">
-                  <Media
-                    src={service.image.src}
-                    alt={service.image.alt}
-                    ratio="card"
-                    frame="square"
-                    sizes="(min-width: 640px) 58vw, 82vw"
-                  />
+                  <ImageReveal>
+                    <Media
+                      src={service.image.src}
+                      alt={service.image.alt}
+                      ratio="card"
+                      frame="square"
+                      sizes="(min-width: 640px) 58vw, 82vw"
+                    />
+                  </ImageReveal>
 
                   <div className="flex flex-1 flex-col p-5 sm:p-6">
                     <div className="flex items-center gap-3">

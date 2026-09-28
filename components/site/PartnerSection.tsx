@@ -1,20 +1,26 @@
 import { ArrowUpRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Media } from "@/components/ui/Media";
+import { ImageReveal } from "@/components/ui/ImageReveal";
 import { Reveal } from "@/components/ui/Reveal";
 import { SignalRail } from "@/components/ui/Section";
 import { cn } from "@/lib/cn";
 
-/** Stagger between the three operational metadata labels. */
-const META_STEP = 60;
+/**
+ * The beat between the lines of a partner column opening: label, headline,
+ * sentence, points, action. The same 110ms `SectionHeading` uses — this column is
+ * a section opening and should read as one, and with the metadata line no longer
+ * taking beats of its own there is room for the full interval.
+ */
+const LINE_STEP = 110;
 
 /**
- * The beat between the lines of a partner column opening. Shorter than the 90ms
- * `SectionHeading` uses because there are more lines here — label, headline,
- * sentence, conditions, points, action — and the whole opening still has to land
- * inside one transition rather than turn into a queue.
+ * The metadata line is a footnote to the sentence above it rather than a line of
+ * its own, so it follows half a beat behind that sentence and all three conditions
+ * travel together. They used to arrive one at a time, 60ms apart, which announced
+ * three separate things where there is one fact in three parts.
  */
-const LINE_STEP = 70;
+const META_DELAY = LINE_STEP * 2 + 55;
 
 export type PartnerContent = {
   eyebrow: string;
@@ -118,17 +124,14 @@ export function PartnerSection({
           </p>
 
           <ul
+            style={{ transitionDelay: `${META_DELAY}ms` }}
             className={cn(
-              "mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-sans text-[0.625rem] font-medium uppercase leading-none tracking-[0.18em]",
+              "op-stagger mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-sans text-[0.625rem] font-medium uppercase leading-none tracking-[0.18em]",
               dark ? "text-white/65" : "text-muted",
             )}
           >
             {content.meta.map((item, position) => (
-              <li
-                key={item}
-                style={{ transitionDelay: `${LINE_STEP * 2 + position * META_STEP}ms` }}
-                className="op-stagger flex items-center gap-3"
-              >
+              <li key={item} className="flex items-center gap-3">
                 {position > 0 ? (
                   <span aria-hidden="true" className="h-1 w-1 shrink-0 rounded-full bg-red" />
                 ) : null}
@@ -192,10 +195,12 @@ export function PartnerSection({
           )}
         >
           <figure className="relative">
-            {/* The two bands open from their own outer edge — the driver plate from the
-                left, the agency plate from the right — so the spread reads as two
-                pages opening outward rather than two copies of one effect. */}
-            <div className={left ? "clip-in-right" : "clip-in-left"}>
+            {/* Both plates open the same way — uncovered from the top edge as they
+                rise — rather than mirroring each other left and right. The two
+                bands sit one above the other on the page, so a reader meets them
+                in sequence, not side by side: giving them opposite directions
+                made the second one read as a correction of the first. */}
+            <ImageReveal>
               <Media
                 src={content.image.src}
                 alt={content.image.alt}
@@ -204,7 +209,7 @@ export function PartnerSection({
                 parallax={10}
                 sizes="(min-width: 1024px) 52vw, 92vw"
               />
-            </div>
+            </ImageReveal>
             {/* A single corner tick: the operational marker that replaces the card
                 border the frame used to carry. */}
             <span

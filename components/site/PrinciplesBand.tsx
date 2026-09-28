@@ -16,8 +16,22 @@ const icons: Record<Pillar["icon"], LucideIcon> = {
 /**
  * Each principle is uncovered a little before its share of the sweep, so the last
  * one is not still waiting when the sweep line has already run past it.
+ *
+ * This governs the indicator only. The cards' own entrance is not a function of
+ * the sweep — see `entered` below.
  */
 const revealAt = (index: number, count: number) => ((index + 0.35) / count) * 0.9;
+
+/**
+ * The beat between one card arriving and the next.
+ *
+ * Longer than the 110ms a section header opens on, and deliberately so: a header's
+ * three lines are one sentence being spoken, where these are four separate
+ * statements on one rule. At 120ms the four land as a counted sequence — you can
+ * see that there are four of them, and in which order — and the last one is still
+ * only 360ms behind the first, well inside its own transition.
+ */
+const CARD_STEP = 120;
 
 /**
  * The network principles band: four principles on one ruled line, with a single red
@@ -54,18 +68,49 @@ export function PrinciplesBand() {
   const [still, setStill] = useState(false);
   /** Pointer or keyboard focus on one principle. Outranks the scroll position. */
   const [picked, setPicked] = useState<number | null>(null);
+  /**
+   * The band has been reached. The four cards' entrance is a one-time reveal on
+   * its own observer rather than a function of the sweep, because those are two
+   * different questions: the sweep answers "which principle am I reading", which
+   * has to keep answering as the reader moves, and the entrance answers "has this
+   * band arrived", which is only ever answered once. Driving the entrance from
+   * the sweep meant the four cards faded back out when the reader scrolled up.
+   */
+  const [entered, setEntered] = useState(false);
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
 
+    let cleanup: (() => void) | null = null;
+
     if (stilled()) {
       setProgress(1);
       setStill(true);
+      setEntered(true);
       return;
     }
 
-    return onScroll(() => {
+    if (typeof IntersectionObserver === "undefined") {
+      setEntered(true);
+    } else {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            setEntered(true);
+            // Once opened, it stays open: the stagger is an arrival, and an
+            // arrival that replays every time the band is scrolled past is a loop.
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.2, rootMargin: "0px 0px -5% 0px" },
+      );
+      observer.observe(node);
+      cleanup = () => observer.disconnect();
+    }
+
+    const off = onScroll(() => {
       const rect = node.getBoundingClientRect();
       const view = viewport();
       // 0 when the band's top edge reaches 88% of the viewport height, 1 when its
@@ -74,6 +119,11 @@ export function PrinciplesBand() {
       const span = rect.height + view * 0.48;
       setProgress(Math.min(Math.max((view * 0.88 - rect.top) / span, 0), 1));
     });
+
+    return () => {
+      off();
+      cleanup?.();
+    };
   }, []);
 
   const revealedCount = pillars.filter(
@@ -108,8 +158,17 @@ export function PrinciplesBand() {
       <ul className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0">
         {pillars.map((pillar, index) => {
           const Icon = icons[pillar.icon];
-          const revealed = progress >= revealAt(index, pillars.length);
           const current = index === active;
+          /** The card's own arrival, one beat behind the card before it. */
+          const step = { transitionDelay: `${index * CARD_STEP}ms` };
+          /**
+           * The accent's delay, written per property rather than as one number.
+           * Its transition is `transform` then `opacity`: the draw is the arrival
+           * and takes the stagger, the brightening is the band's answer to being
+           * pointed at and must not — a shared delay meant the fourth card's
+           * accent took a third of a second to acknowledge the cursor.
+           */
+          const accentStep = { transitionDelay: `${index * CARD_STEP}ms, 0ms` };
 
           return (
             <li
@@ -125,8 +184,9 @@ export function PrinciplesBand() {
               onMouseLeave={() => setPicked((value) => (value === index ? null : value))}
               onFocus={() => setPicked(index)}
               onBlur={() => setPicked((value) => (value === index ? null : value))}
+              style={step}
               className="principle relative border-t border-white/15 pt-7 lg:border-l lg:border-t-0 lg:border-white/12 lg:px-7 lg:pt-8 lg:first:border-l-0 lg:first:pl-0 lg:last:pr-0"
-              data-revealed={revealed ? "true" : "false"}
+              data-revealed={entered ? "true" : "false"}
             >
               {/* Each principle's own accent, drawn left to right as the sweep
                   reaches it — so the band establishes itself a station at a time
@@ -140,6 +200,7 @@ export function PrinciplesBand() {
                   with a position marked on it. */}
               <span
                 aria-hidden="true"
+                style={accentStep}
                 data-current={current ? "true" : "false"}
                 className="principle-accent absolute left-0 top-0 block h-px w-full bg-red"
               />
