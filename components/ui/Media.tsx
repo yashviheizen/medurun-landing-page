@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ParallaxLayer } from "@/components/ui/ParallaxLayer";
 import { cn } from "@/lib/cn";
 
 /**
@@ -72,6 +73,7 @@ export function Media({
   sizes,
   priority = false,
   eager = false,
+  parallax = 0,
   zoom = false,
   className,
   children,
@@ -90,10 +92,35 @@ export function Media({
    * means the first click after arriving lands on a frame that has not decoded yet.
    */
   eager?: boolean;
+  /**
+   * Drift the photograph a few pixels against the page as its frame is read,
+   * desktop only. The number is the total travel across the whole pass; the
+   * overscale that gives it somewhere to go is applied at every setting, reduced
+   * motion included, so the crop everybody sees is the same one.
+   */
+  parallax?: number;
   zoom?: boolean;
   className?: string;
   children?: React.ReactNode;
 }) {
+  const photo = (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes={sizes}
+      priority={priority}
+      loading={priority ? undefined : eager ? "eager" : "lazy"}
+      // One colour treatment for every photo: slightly pulled-back saturation
+      // and a touch of contrast, so warm and cool stock sits together.
+      className={cn(
+        "object-cover saturate-[0.9] contrast-[1.04]",
+        focals[focus],
+        zoom && "transition-transform duration-500 motion-safe:group-hover:scale-[1.03]",
+      )}
+    />
+  );
+
   return (
     <div
       className={cn(
@@ -103,21 +130,13 @@ export function Media({
         className,
       )}
     >
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes={sizes}
-        priority={priority}
-        loading={priority ? undefined : eager ? "eager" : "lazy"}
-        // One colour treatment for every photo: slightly pulled-back saturation
-        // and a touch of contrast, so warm and cool stock sits together.
-        className={cn(
-          "object-cover saturate-[0.9] contrast-[1.04]",
-          focals[focus],
-          zoom && "transition-transform duration-500 motion-safe:group-hover:scale-[1.03]",
-        )}
-      />
+      {parallax > 0 ? (
+        <ParallaxLayer travel={parallax} className="media-shift absolute inset-0">
+          {photo}
+        </ParallaxLayer>
+      ) : (
+        photo
+      )}
       {/* Shared unifying scrim — navy, and light enough to leave the photo readable. */}
       <div aria-hidden="true" className="absolute inset-0 bg-navy-ink/[0.06]" />
       {children}

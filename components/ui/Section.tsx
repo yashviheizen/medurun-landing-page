@@ -1,3 +1,4 @@
+import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/cn";
 
 const tones = {
@@ -74,9 +75,21 @@ export function Section({
 }
 
 /**
+ * The beat between one line of a section opening and the next. Three lines at 90ms
+ * puts the whole header on the frame inside its own 720ms transition — the number,
+ * the headline and the sentence read as one arrival with an order to it, rather
+ * than as three things queueing.
+ */
+const STEP = 90;
+
+/**
  * Every band opens the same way: a numbered operational label hung off the signal
  * rail, then an editorial headline. No container, no card — the rules and the
  * whitespace do the separating.
+ *
+ * The header is itself the reveal host and its three lines carry the stagger, so
+ * every section on the page opens the same way for the same reason it looks the
+ * same: there is one of it, here.
  */
 export function SectionHeading({
   index,
@@ -97,15 +110,22 @@ export function SectionHeading({
   className?: string;
 }) {
   return (
-    <header className={cn("max-w-3xl", align === "center" && "mx-auto text-center", className)}>
-      <p className={cn("op-label", align === "left" && "op-label--rail")}>
+    <Reveal
+      as="header"
+      items
+      className={cn("max-w-3xl", align === "center" && "mx-auto text-center", className)}
+    >
+      <p
+        className={cn("stagger-up op-label", align === "left" && "op-label--rail")}
+      >
         {index ? <span className="tabular-nums text-red">{index}</span> : null}
         <span>{eyebrow}</span>
       </p>
 
       <h2
+        style={{ transitionDelay: `${STEP}ms` }}
         className={cn(
-          "mt-6 text-[2.1rem] leading-[1.08] sm:text-[2.7rem] lg:text-[3.15rem]",
+          "stagger-up mt-6 text-[2.1rem] leading-[1.08] sm:text-[2.7rem] lg:text-[3.15rem]",
           tone === "dark" ? "text-white" : "text-ink",
         )}
       >
@@ -114,14 +134,15 @@ export function SectionHeading({
 
       {body ? (
         <p
+          style={{ transitionDelay: `${STEP * 2}ms` }}
           className={cn(
-            "mt-5 max-w-xl text-base leading-relaxed sm:text-lg",
+            "stagger-up mt-5 max-w-xl text-base leading-relaxed sm:text-lg",
             tone === "dark" ? "text-white/70" : "text-muted",
           )}
         >
           {body}
         </p>
       ) : null}
-    </header>
+    </Reveal>
   );
 }

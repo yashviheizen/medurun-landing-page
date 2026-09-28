@@ -5,6 +5,7 @@ import { DispatchRail } from "@/components/illustrations/DispatchRail";
 import { company, hero } from "@/data/site";
 import { asset } from "@/lib/asset";
 import { cn } from "@/lib/cn";
+import { HeroMotion } from "@/components/site/HeroMotion";
 
 /**
  * The hero is one cinematic frame: a night call, photographed head-on, with the
@@ -53,6 +54,7 @@ import { cn } from "@/lib/cn";
 export function Hero() {
   return (
     <section className="hero-canvas relative isolate flex flex-col overflow-hidden bg-navy-ink text-white">
+      <HeroMotion />
       {/* The photograph, its veil and its two lamps, in one box.
           
           They share a box because they have to: the lamps are pinned to points in

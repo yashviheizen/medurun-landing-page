@@ -5,6 +5,9 @@ import { company, contact, emails } from "@/data/site";
 
 const mailboxes = [emails.support, emails.business, emails.operations];
 
+/** One stagger step, matching the cadence `SectionHeading` opens every section with. */
+const STEP = 90;
+
 /**
  * The closing band. One action is dominant — the helpline, set as the largest type
  * on the page after the hero headline — with the mailboxes and website underneath it
@@ -64,10 +67,16 @@ export function Contact() {
             </a>
           </Reveal>
 
-          <Reveal delay={60}>
+          {/* The rows arrive one after another rather than as a block: three ruled
+              lines appearing together read as a table, in sequence as a list. */}
+          <Reveal items>
             <ul className="mt-11">
-              {mailboxes.map((mailbox) => (
-                <li key={mailbox.address} className="border-t border-white/15 last:border-b">
+              {mailboxes.map((mailbox, index) => (
+                <li
+                  key={mailbox.address}
+                  style={index ? { transitionDelay: `${index * STEP}ms` } : undefined}
+                  className="stagger-up border-t border-white/15 last:border-b"
+                >
                   <a
                     href={`mailto:${mailbox.address}`}
                     className="group flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-4 transition-colors duration-300 hover:text-red"
@@ -89,9 +98,9 @@ export function Contact() {
             </ul>
           </Reveal>
 
-          <Reveal delay={90}>
+          <Reveal items>
             <div className="mt-10 grid gap-8 sm:grid-cols-2">
-              <div>
+              <div className="stagger-up">
                 <p className="op-label">
                   <span>Registered office</span>
                 </p>
@@ -100,7 +109,7 @@ export function Contact() {
                 </address>
               </div>
 
-              <div>
+              <div className="stagger-up" style={{ transitionDelay: `${STEP}ms` }}>
                 <p className="op-label">
                   <span>Entity &amp; website</span>
                 </p>

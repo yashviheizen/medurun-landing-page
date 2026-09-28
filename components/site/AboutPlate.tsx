@@ -2,25 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Media } from "@/components/ui/Media";
+import { onScroll, pass, stilled, viewport } from "@/lib/motion";
 
 /**
- * How much the photograph travels inside its own crop, as a share of the plate's
- * height. 2.4% — the whole point is that it is not noticed as movement, only as the
- * plate having depth. Anything past about 3% and the crop is visibly sliding.
+ * Total distance the photograph travels inside its own crop, top of its pass to
+ * bottom — so ±6px either side of centre. The same 12px every other plate on the
+ * page drifts (see `ParallaxLayer`): a fixed number rather than a share of the
+ * plate's height, because a share makes the tallest photograph drift the furthest,
+ * which is exactly backwards — the biggest plate is the one where movement shows.
  */
-const DRIFT = 0.024;
-
-/**
- * The overscale that gives the drift somewhere to go. It is a crop decision, not
- * motion: it is applied at every setting, including reduced motion, so the plate
- * shows the same framing to everybody.
- */
-const SCALE = 1.05;
+const TRAVEL = 12;
 
 /**
  * The About photograph. Two things happen to it and no more: it is uncovered by a
- * clean horizontal mask when it is first reached, and thereafter it holds a couple
- * of percent of parallax inside its own crop as the band is read.
+ * clean horizontal mask when it is first reached, and thereafter — on desktop only —
+ * it holds a few pixels of parallax inside its own crop as the band is read.
  *
  * The caption follows rather than accompanies — it names what the photograph is a
  * picture of, and a name that arrives with the thing it names is not read.
@@ -37,16 +33,14 @@ export function AboutPlate({
   sizes: string;
 }) {
   const ref = useRef<HTMLElement | null>(null);
+  const shift = useRef<HTMLDivElement | null>(null);
   const [run, setRun] = useState(false);
-  const [offset, setOffset] = useState(0);
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
 
-    const still =
-      typeof IntersectionObserver === "undefined" ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const still = typeof IntersectionObserver === "undefined" || stilled();
 
     if (still) {
       // Uncovered outright, and pinned: no mask animation, no parallax.
@@ -67,37 +61,48 @@ export function AboutPlate({
 
     observer.observe(node);
 
-    let frame = 0;
-
     /**
      * Where the plate sits in its own pass across the viewport, 0 to 1, turned into
-     * a travel of ±DRIFT of its height. Measured off the live rect rather than
-     * accumulated from scroll deltas, so it is correct after a resize, a jump to an
-     * anchor, or a reload part-way down the page.
+     * a travel of ±TRAVEL/2. Measured off the live rect rather than accumulated from
+     * scroll deltas, so it is correct after a resize, a jump to an anchor, or a
+     * reload part-way down the page.
+     *
+     * Written straight to the node as a custom property. This runs every frame the
+     * plate is on screen, and re-rendering a React subtree sixty times a second to
+     * move a photograph six pixels is work the compositor will do for free.
      */
     const measure = () => {
-      frame = 0;
-      const rect = node.getBoundingClientRect();
-      const view = window.innerHeight || document.documentElement.clientHeight;
-      const span = view + rect.height;
-      if (span <= 0) return;
-      const progress = Math.min(Math.max((view - rect.top) / span, 0), 1);
-      setOffset((progress - 0.5) * 2 * DRIFT * rect.height);
+      const travel = (pass(node.getBoundingClientRect(), viewport()) - 0.5) * TRAVEL;
+      shift.current?.style.setProperty("--shift", `${travel.toFixed(2)}px`);
     };
 
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
+    /**
+     * Desktop only, and bound to the query rather than read once — the same gate
+     * `ParallaxLayer` uses, so every photograph on the page starts and stops
+     * drifting at the same width. A touch screen is scrolled in long flicks where
+     * parallax reads as the crop lagging, and it is the one place the mask reveal
+     * has to carry the plate on its own.
+     */
+    const wide = window.matchMedia("(min-width: 1024px)");
+    let off: (() => void) | null = null;
+
+    const sync = () => {
+      off?.();
+      off = null;
+      if (!wide.matches) {
+        shift.current?.style.setProperty("--shift", "0px");
+        return;
+      }
+      off = onScroll(measure);
     };
 
-    measure();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    sync();
+    wide.addEventListener("change", sync);
 
     return () => {
       observer.disconnect();
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      off?.();
+      wide.removeEventListener("change", sync);
     };
   }, []);
 
@@ -108,7 +113,7 @@ export function AboutPlate({
       data-run={run ? "true" : "false"}
     >
       <div className="plate-clip relative overflow-hidden">
-        <div style={{ transform: `translate3d(0, ${offset.toFixed(2)}px, 0) scale(${SCALE})` }}>
+        <div ref={shift} className="plate-shift">
           <Media
             src={src}
             alt={alt}

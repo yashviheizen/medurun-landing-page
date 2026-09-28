@@ -112,14 +112,94 @@
      script in the layout sets — without JS nothing can un-hide these, so they
      must render visible. */
   .reveal {
-    transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1), transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   /* Held at a legible opacity rather than 0 — content is never blank while it
-     scrolls past, only slightly settled. */
+     scrolls past, only slightly settled. 16px is the bottom of the range this
+     page uses: enough that the arrival is a movement rather than a flicker, small
+     enough that a reader scrolling steadily never sees anything travelling. */
   .js .reveal[data-visible="false"] {
     opacity: 0.35;
-    transform: translateY(8px);
+    transform: translateY(16px);
+  }
+
+  /* ---------------------------------------------------------------------------
+     Staggered entrances, without the wrappers.
+
+     A section opening — its number, its headline, its sentence, its buttons —
+     arrives a beat at a time rather than as one block. The obvious way to build
+     that is a `Reveal` around each line, and it is the wrong way: four nested
+     block wrappers between a header and its own children put four new margin
+     collapse boundaries into a layout that is currently tuned to the pixel.
+
+     So the observer goes on the element that is already there — the `<header>`,
+     the list, the contact column — and the stagger is carried by its children.
+     `.reveal--items` stops that host dimming itself, because a host at 0.35
+     multiplied by a child at 0 is a child at zero and a full beat of nothing.
+
+     Delays are inline, from the component, and cap out well short of a second:
+     the last item in a group is still arriving on the same breath as the first.
+     --------------------------------------------------------------------------- */
+  .stagger-up {
+    transition:
+      opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .js .reveal[data-visible="false"] .stagger-up {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  .js .reveal--items[data-visible="false"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The voices carousel's sideways entrance. Same clock as `.stagger-up`, a
+     different axis: the row says what it is by arriving along the direction it
+     moves in. */
+  .voices-in {
+    transition:
+      opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .js .reveal[data-visible="false"] .voices-in {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+
+  /* ---------------------------------------------------------------------------
+     Photographic parallax.
+
+     The overscale is not motion and is applied at every setting, reduced motion
+     included: it is the crop everybody sees, and a plate that is framed one way
+     for one reader and another way for another is two different photographs. What
+     the preference actually governs is `--shift`, which `ParallaxLayer` only ever
+     writes on a desktop viewport where motion is welcome, and parks at 0 anywhere
+     else.
+
+     5% of overscale against 10px of travel: on the shortest frame this is applied
+     to the slack is about 12px against 5px of movement either way, so the drift
+     can never reach an edge and expose the frame's ground.
+     --------------------------------------------------------------------------- */
+  .media-shift {
+    transform: translate3d(0, var(--shift, 0px), 0) scale(1.05);
+    will-change: transform;
+  }
+
+  /* The About plate drifts by a share of its own height rather than a fixed number
+     of pixels — it is the widest frame on the page and a 10px travel that reads as
+     depth on a service card reads as nothing across a 21:9 plate — so its overscale
+     is its own too. Same rule otherwise: the scale is the crop and everybody gets
+     it, the shift is the motion and only some do. */
+  .plate-shift {
+    transform: translate3d(0, var(--shift, 0px), 0) scale(1.05);
+    will-change: transform;
   }
 
   /* Voices carousel. The track is a native scroll container, so swipe, trackpad,
@@ -353,6 +433,47 @@
      --------------------------------------------------------------------------- */
   .hero-stage {
     container-type: size;
+  }
+
+  /* ---------------------------------------------------------------------------
+     The hero's departure.
+
+     `--hero-exit` runs 0 to 1 as the section scrolls off, written from
+     `HeroMotion`. Two things read it and no more: the photograph swells four
+     percent, and the centred copy lifts 26px and softens. The section recedes
+     instead of merely scrolling away, and it costs no scroll distance to do it —
+     there is no sticky hero here, no pinned stage, and no extra height. The band
+     below arrives exactly where it always did.
+
+     The swell is the `scale` property rather than a transform, and that is not a
+     stylistic choice: `bg-drift` already owns the stage's `transform`, animating
+     it between 1.035 and 1.085 over half a minute. `scale` is a separate
+     property that multiplies with it, so the two compose — the exit swells
+     whatever the drift is currently at — where a second `transform` would simply
+     replace the first and stop the photograph breathing.
+
+     The copy's floor is 0.18 rather than 0. A hero that has gone completely blank
+     while its own last third is still on screen reads as a rendering fault, and
+     the movement is already carrying the recession; the opacity only has to take
+     the weight off it.
+
+     Declared only where motion is welcome. Under `prefers-reduced-motion` neither
+     rule exists at all, so the hero holds its arrival state at every scroll
+     position rather than holding a clamped version of a transition.
+     --------------------------------------------------------------------------- */
+  .hero-canvas {
+    --hero-exit: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-stage {
+      scale: calc(1 + 0.04 * var(--hero-exit));
+    }
+
+    .hero-copy {
+      transform: translate3d(0, calc(var(--hero-exit) * -26px), 0);
+      opacity: calc(1 - 0.82 * var(--hero-exit));
+    }
   }
 
   /* The navy overlay, in two passes. The linear one is the working layer: heavy
@@ -750,6 +871,30 @@
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
+  /* Each principle's accent, drawn from its left edge as the sweep reaches it.
+     `scaleX` rather than a width transition because this is a solid 1px rule, not
+     a dashed one: there is no pattern to stretch, and scaling a solid line along
+     its own axis is the cheapest way to draw it — one compositor property, no
+     layout on any of the 800ms it takes.
+
+     The drawn-from-nothing state is scoped to `.js`, so with no JavaScript all
+     four accents render at their full width alongside the text they underline. */
+  .principle-accent {
+    transform-origin: left center;
+    opacity: 0.45;
+    transition:
+      transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.4s ease-out;
+  }
+
+  .principle-accent[data-current="true"] {
+    opacity: 1;
+  }
+
+  .js .principle[data-revealed="false"] .principle-accent {
+    transform: scaleX(0);
+  }
+
   /* ---------------------------------------------------------------------------
      The positioning schematic, routed once.
 
@@ -992,6 +1137,8 @@
   .js .reveal[data-visible="false"],
   .js .principle[data-revealed="false"],
   .js .reveal[data-visible="false"] .op-stagger,
+  .js .reveal[data-visible="false"] .stagger-up,
+  .js .reveal[data-visible="false"] .voices-in,
   .js .flow[data-run="false"] .flow-node,
   .js .flow[data-run="false"] .flow-label,
   .js .plate[data-run="false"] .plate-caption {
@@ -1016,5 +1163,28 @@
   .js .reveal[data-visible="false"] .clip-in-left,
   .js .plate[data-run="false"] .plate-clip {
     clip-path: inset(0);
+  }
+
+  /* Drawn in full from the first frame. The accent is a scaled transform rather
+     than a clip, so it needs the transform reset and not `inset(0)`. */
+  .js .principle[data-revealed="false"] .principle-accent {
+    transform: none;
+  }
+
+  /* The photographs hold their authored crop and do not drift. The overscale is
+     left alone on purpose — it is the framing, not the motion, and it is the same
+     framing every other reader is looking at. `ParallaxLayer` never writes
+     `--shift` under this preference, but naming it here means the plates are
+     still correct if a reader turns the preference on mid-session. */
+  .media-shift,
+  .plate-shift {
+    --shift: 0px;
+  }
+
+  /* The hero holds its arrival state at every scroll position: no swell, no lift,
+     no fade. `HeroMotion` stops writing the property, and this makes the rules
+     that read it inert even if a stale value is left on the element. */
+  .hero-canvas {
+    --hero-exit: 0;
   }
 }

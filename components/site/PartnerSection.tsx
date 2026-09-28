@@ -185,6 +185,7 @@ export function PartnerSection({
                 alt={content.image.alt}
                 ratio="editorial"
                 frame="square"
+                parallax={10}
                 sizes="(min-width: 1024px) 52vw, 92vw"
               />
             </div>

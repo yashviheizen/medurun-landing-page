@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Testimonial } from "@/data/site";
+import { Reveal } from "@/components/ui/Reveal";
 
 /**
  * How long a slide change takes. The progress line is given the same number so the
@@ -183,7 +184,16 @@ export function VoicesSlider({ items }: { items: Testimonial[] }) {
   };
 
   return (
-    <div role="group" aria-roledescription="carousel" aria-label="Voices across the network">
+    /**
+     * The carousel arrives sideways, which is the one direction that says what it
+     * is: a row you move along rather than a stack you scroll past. The entrance is
+     * on the cards, not on the track — the track is a native scroll container, and
+     * translating that would move a scrollport against the page. Transforms do not
+     * contribute to scroll area, so cards entering from 28px to the right cannot
+     * widen the document or hand the page a horizontal scrollbar.
+     */
+    <Reveal items>
+      <div role="group" aria-roledescription="carousel" aria-label="Voices across the network">
       <div
         ref={trackRef}
         tabIndex={0}
@@ -203,7 +213,11 @@ export function VoicesSlider({ items }: { items: Testimonial[] }) {
             aria-label={`Slide ${slide + 1} of ${total}: ${testimonial.role}`}
             aria-current={slide === index ? "true" : undefined}
             data-current={slide === index ? "true" : "false"}
-            className="voices-card group flex snap-start snap-always flex-col rounded-[7px] border border-line bg-white p-6 sm:p-8 lg:p-10"
+            /* Only the first few are staggered. Beyond the third card nothing is on
+               screen to be late, and a tenth card holding a 700ms delay is a card
+               that is still arriving when it is finally swiped to. */
+            style={slide < 3 ? { transitionDelay: `${slide * 70}ms` } : undefined}
+            className="voices-card voices-in group flex snap-start snap-always flex-col rounded-[7px] border border-line bg-white p-6 sm:p-8 lg:p-10"
           >
             <figcaption className="flex items-center gap-4">
               <span className="text-[0.72rem] font-medium tabular-nums tracking-[0.16em] text-muted transition-colors duration-[420ms] ease-out group-data-[current=true]:text-navy-deep">
@@ -294,5 +308,6 @@ export function VoicesSlider({ items }: { items: Testimonial[] }) {
         </div>
       </div>
     </div>
+    </Reveal>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Eye, Gauge, ShieldCheck, Timer, type LucideIcon } from "lucide-react";
 import { pillars, type Pillar } from "@/data/site";
+import { onScroll, stilled, viewport } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 
 const icons: Record<Pillar["icon"], LucideIcon> = {
@@ -58,38 +59,21 @@ export function PrinciplesBand() {
     const node = ref.current;
     if (!node) return;
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (stilled()) {
       setProgress(1);
       setStill(true);
       return;
     }
 
-    let frame = 0;
-
-    const measure = () => {
-      frame = 0;
+    return onScroll(() => {
       const rect = node.getBoundingClientRect();
-      const view = window.innerHeight || 1;
+      const view = viewport();
       // 0 when the band's top edge reaches 88% of the viewport height, 1 when its
       // bottom edge reaches 40% — so the sweep finishes while the band is still
       // comfortably on screen rather than as it leaves.
       const span = rect.height + view * 0.48;
       setProgress(Math.min(Math.max((view * 0.88 - rect.top) / span, 0), 1));
-    };
-
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
-    };
-
-    measure();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
+    });
   }, []);
 
   const revealedCount = pillars.filter(
@@ -144,14 +128,20 @@ export function PrinciplesBand() {
               className="principle relative border-t border-white/15 pt-7 lg:border-l lg:border-t-0 lg:border-white/12 lg:px-7 lg:pt-8 lg:first:border-l-0 lg:first:pl-0 lg:last:pr-0"
               data-revealed={revealed ? "true" : "false"}
             >
-              {/* Below lg the columns become rows, so the indicator becomes a short
-                  red segment on each card's own top rule. */}
+              {/* Each principle's own accent, drawn left to right as the sweep
+                  reaches it — so the band establishes itself a station at a time
+                  in the same direction the route above it runs.
+
+                  It is held at 0.45 until the principle is the one being read,
+                  and only then comes to full strength. That is what keeps it from
+                  contradicting the single indicator on the rule above: four lines
+                  at full red would be four answers to "which one am I reading",
+                  where four faint lines and one bright one is a drawn structure
+                  with a position marked on it. */}
               <span
                 aria-hidden="true"
-                className={cn(
-                  "absolute left-0 top-0 block h-px bg-red transition-[width,opacity] duration-500 ease-out lg:hidden",
-                  current ? "w-12 opacity-100" : "w-6 opacity-0",
-                )}
+                data-current={current ? "true" : "false"}
+                className="principle-accent absolute left-0 top-0 block h-px w-full bg-red"
               />
 
               <div className="flex items-center gap-3">

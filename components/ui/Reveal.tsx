@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 
 /** Staggered delays are capped so a long row never trails far behind its first card. */
-const MAX_DELAY = 120;
+const MAX_DELAY = 220;
 
 /**
  * Fades content in on first scroll into view. Renders visible immediately when
@@ -18,12 +18,20 @@ export function Reveal({
   children,
   delay = 0,
   className,
+  items = false,
   as: Tag = "div",
 }: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
-  as?: "div" | "li" | "article";
+  /**
+   * Carry the entrance on `.stagger-up` children instead of on this element. For
+   * hosts that are already in the layout — a section header, a details column —
+   * where wrapping each line in its own `Reveal` would add margin-collapse
+   * boundaries to spacing that is tuned to the pixel.
+   */
+  items?: boolean;
+  as?: "div" | "li" | "article" | "header" | "section";
 }) {
   const ref = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -61,7 +69,7 @@ export function Reveal({
   return (
     <Tag
       ref={ref as never}
-      className={cn("reveal", className)}
+      className={cn("reveal", items && "reveal--items", className)}
       data-visible={visible ? "true" : "false"}
       style={staggered ? { transitionDelay: `${staggered}ms` } : undefined}
     >

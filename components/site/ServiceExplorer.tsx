@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Media } from "@/components/ui/Media";
+import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/cn";
 import { type Service } from "@/data/site";
 
@@ -212,7 +213,13 @@ export function ServiceExplorer({ items }: { items: Service[] }) {
           as the first service row. Centred, the panel column — which is taller than
           the five rows — started above the list and the section read as two blocks
           that had missed each other. */}
-      <div className="hidden lg:grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-14">
+      {/* `items`, so the host itself never dims: the entrance here is the plate's
+          mask being drawn back, and a column of live tabs fading in behind it
+          would only add a second thing happening. */}
+      <Reveal
+        items
+        className="hidden lg:grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-14"
+      >
         <div
           ref={listRef}
           role="tablist"
@@ -308,20 +315,23 @@ export function ServiceExplorer({ items }: { items: Service[] }) {
                   the section is scrolled to, so no click ever lands on a frame that
                   has not decoded. `eager` and not `priority`: they start early but
                   never outrank the hero photograph. */}
-              <Media
-                src={service.image.src}
-                alt={service.image.alt}
-                ratio="card"
-                eager={stacked}
-                sizes="(min-width: 1024px) 52vw, 92vw"
-              />
+              <div className="clip-in-right">
+                <Media
+                  src={service.image.src}
+                  alt={service.image.alt}
+                  ratio="card"
+                  eager={stacked}
+                  parallax={10}
+                  sizes="(min-width: 1024px) 52vw, 92vw"
+                />
+              </div>
               <p className="mt-6 max-w-xl text-[1.02rem] leading-relaxed text-muted">
                 {service.body}
               </p>
             </div>
           ))}
         </div>
-      </div>
+      </Reveal>
 
       {/* ---------- Small screens: scroll-snap cards ---------- */}
       <div className="lg:hidden">
