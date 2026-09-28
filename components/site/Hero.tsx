@@ -226,6 +226,16 @@ export function Hero() {
           <p className="hero-dispatch-eta">ETA 08 min</p>
           <span className="hero-dispatch-stem" />
         </div>
+
+        {/* The light wipe: the hero's own headlamps turning the frame into the
+          paper the next section is printed on. Two soft paper-coloured discs
+          centred on the lamps in the photograph, expanding with the scroll until
+          they have merged into one full screen of Positioning's exact ground —
+          and the canvas itself is masked out from the same two centres a beat
+          behind, so the leading edge reads as a bright ring with the real section
+          already showing inside it. Painted last so it is over the photograph,
+          the annotation and the rail alike. See `.hero-wipe`. */}
+        <span className="hero-wipe" aria-hidden="true" />
       </section>
     </div>
   );

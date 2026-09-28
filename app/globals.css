@@ -479,6 +479,13 @@
      number and neither section has to hold a reference to the other. */
   :root {
     --hero-exit: 0;
+
+    /* Positioning's ground, named once. The light wipe has to expand to this
+       exact colour or the merge shows a seam where the bloom meets the section it
+       is turning into, so the two cannot be allowed to drift apart in two places.
+       It is `theme.colors.paper.DEFAULT`; Tailwind's own token is not reachable
+       from a gradient stop. */
+    --paper: #f5f2ee;
   }
 
   .hero-canvas {
@@ -1334,11 +1341,13 @@
      stilled version of a sequence to maintain.
      =========================================================================== */
 
-  /* Off everywhere by default: the two route continuations only mean something
-     while the hero is pinned, so outside the cinematic query they are not drawn
-     rather than drawn and hidden. */
+  /* Off everywhere by default: the route's four continuation strokes only mean
+     something while the hero is pinned, so outside the cinematic query they are
+     not drawn rather than drawn and hidden. */
   .hero-drop,
-  .route-drop {
+  .hero-carry,
+  .hero-lead,
+  .pos-drop {
     display: none;
   }
 
@@ -1357,12 +1366,63 @@
   }
 
   /* ---------------------------------------------------------------------------
-     1. Hero → Positioning.
+     The light wipe, in its small-screen form.
 
-     150vh of track, a screen of stage: half a screen of scroll to play the
-     departure in. Short on purpose. The hero is the first thing on the page and
-     a reader who has to scroll a full extra screen to get past the masthead has
-     been charged for the effect rather than shown it.
+     On a phone or a tablet the hero is not pinned, there is no scroll budget to
+     expand two discs across, and the reader is holding the copy on screen for
+     most of the exit — a radial wipe there would wash the headline it is still
+     being read. So the brief's fallback is what is declared here and it is a
+     crossfade rather than a wipe: a band of Positioning's exact ground fading up
+     across the bottom quarter of the frame as the hero leaves, so the hard seam
+     between the navy and the paper below dissolves instead of scrolling past.
+
+     The mask is the whole mechanism. `linear-gradient(transparent -> black)` keeps
+     the layer off the top three quarters of the frame at every opacity, so the
+     copy can never be touched by it no matter where the reader has stopped.
+
+     Late on purpose: 0.62 of the exit is the point at which the hero's bottom edge
+     is itself well up the screen, so what the paper covers is the scrim under the
+     rail and not the rail being read.
+     --------------------------------------------------------------------------- */
+  .hero-wipe {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: block;
+    pointer-events: none;
+    background-color: var(--paper);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 76%, #000 100%);
+    mask-image: linear-gradient(to bottom, transparent 76%, #000 100%);
+    opacity: clamp(0, calc((var(--hero-exit) - 0.62) / 0.38), 1);
+  }
+
+  /* ---------------------------------------------------------------------------
+     1. Hero → Positioning: the emergency light wipe.
+
+     200vh of track over a screen of stage, so the hero holds for exactly one
+     screen of scroll and then lets go. That one screen carries four beats, and
+     `--hero-exit` is the only clock any of them read:
+
+         0.00 - 0.40   the centred group leaves, a child at a time, upward
+         0.40 - 0.70   the call annotated onto the empty frame, and the route
+                       handed from the rail's CARE stop to the next section's
+                       first node
+         0.65 - 0.90   the headlamps bloom into two discs of Positioning's own
+                       ground and merge into one screen of it, while the canvas is
+                       masked away from the same two centres a beat behind
+         0.78 - 1.00   Positioning's label and statement come up inside the light
+
+     They overlap because a wipe that waits for the beat before it to finish reads
+     as four separate effects rather than one transition; the overlaps are sized so
+     that nothing is ever half-faded underneath something else arriving.
+
+     The track length is not arbitrary. With the section below lapped back by
+     exactly one canvas height — see `.pos-track` — `--hero-exit` reaches 1 at
+     `T - S` of scroll and Positioning's stage begins sticking at `T - S` as well,
+     for any track height T and any canvas height S. The handover is therefore
+     exact by construction rather than by a number that has to be kept in step:
+     the wipe finishes on the frame the next section locks under the header, and
+     the network's own draw is still at zero when it does.
 
      Every value below is a pure function of `--hero-exit`, so scrolling up runs
      the whole thing backwards for free — there is no transition, no easing state
@@ -1370,7 +1430,17 @@
      --------------------------------------------------------------------------- */
   @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
     .hero-track {
-      height: 150vh;
+      height: 200vh;
+
+      /* The ground the wipe erases *to*, for the strip of the lapped screen that
+         Positioning's own track has not reached yet. The mask takes the canvas
+         away from the headlamps outwards and the top of the frame is the last
+         thing it reaches, by which time the reader is still a couple of hundred
+         pixels above where `.pos-track` begins — without this, those pixels are
+         the page's own background showing through a hole in the hero, and it reads
+         as a seam running across the light. Same colour as the track below it, so
+         where the two meet there is nothing to see. */
+      background-color: var(--paper);
     }
 
     /* Two classes, because the section carries Tailwind's `relative`: a bare
@@ -1378,13 +1448,138 @@
     .hero-track .hero-canvas {
       position: sticky;
       top: var(--header-h);
+
+      /* Above the section it has been lapped over. Both are children of the body
+         and the hero comes first in the document, so without this Positioning
+         would paint on top of the hero it is supposed to be revealed from under.
+         Both stay well below the journey tracker and the header. */
+      z-index: 1;
+
+      /* The two clocks of the wipe. The bloom leads and the mask that erases the
+         canvas trails it, and the gap between them is the whole effect: the ring
+         between the two radii is paper with nothing behind it yet, and inside the
+         inner radius the real section is already showing. Both are the same
+         colour, so the boundary the reader cannot see is the only seam there is.
+
+         `85vmax` is the radius at full progress. It is the distance from a lamp to
+         the furthest corner of the frame at every desktop ratio plus a little, so
+         the merge completes just inside the beat rather than a third of the way
+         into it — at 150vmax the two discs would have swallowed the screen by 0.75
+         and the back half of the wipe would be a still frame. */
+      --wipe: clamp(0, calc((var(--hero-exit) - 0.65) / 0.25), 1);
+      --wipe-hole: clamp(0, calc((var(--hero-exit) - 0.7) / 0.24), 1);
+
+      /* The lamp centres as plain percentages rather than the container-unit crop
+         maths `.hero-lamp` uses. The mask is on the canvas, which is the size
+         container's parent and so cannot read `cq` units at all — and both radii
+         are hundreds of pixels with a soft falloff, so the few pixels the exact
+         crop would move them by are not visible. Written once here and inherited
+         by the bloom, so the two can never be centred differently. */
+      --wipe-x-left: 43.1%;
+      --wipe-x-right: 56.5%;
+      --wipe-y: 74.8%;
     }
 
-    /* The lamps and the beacons come up together over the back half. By then the
-       copy is most of the way gone and the photograph is at its largest, so the
-       light is the last thing to arrive and the only thing left moving. */
+    /* The canvas erased from the headlamps outwards. Two masks, each transparent
+       inside its own disc and opaque outside it, intersected — so what is removed
+       is the *union* of the discs, which is the pair merging into one shape. The
+       0-to-70% plateau is what keeps the hole's own edge soft without smearing the
+       photograph: it is a hole with a feathered rim, not a blur.
+
+       `-webkit-mask-composite: source-in` is the same operation under the older
+       WebKit syntax, which is what Safari still resolves.
+
+       The clip in the last twentieth is not decoration. A masked element is still
+       hit-tested: at 0.95 the canvas is entirely erased but it is still lying over
+       Positioning's links with a z-index above them, and clipping is the one way
+       to take a box out of hit-testing from a scroll-driven custom property.
+       Nothing is visible by then, so nothing is seen to be clipped. */
+    .js .hero-track .hero-canvas {
+      -webkit-mask-image:
+        radial-gradient(
+          circle calc(var(--wipe-hole) * 85vmax) at var(--wipe-x-left)
+            var(--wipe-y),
+          transparent 0%,
+          transparent 70%,
+          #000 100%
+        ),
+        radial-gradient(
+          circle calc(var(--wipe-hole) * 85vmax) at var(--wipe-x-right)
+            var(--wipe-y),
+          transparent 0%,
+          transparent 70%,
+          #000 100%
+        );
+      -webkit-mask-composite: source-in;
+      mask-image:
+        radial-gradient(
+          circle calc(var(--wipe-hole) * 85vmax) at var(--wipe-x-left)
+            var(--wipe-y),
+          transparent 0%,
+          transparent 70%,
+          #000 100%
+        ),
+        radial-gradient(
+          circle calc(var(--wipe-hole) * 85vmax) at var(--wipe-x-right)
+            var(--wipe-y),
+          transparent 0%,
+          transparent 70%,
+          #000 100%
+        );
+      mask-composite: intersect;
+      clip-path: inset(
+        0 0 calc(100% * clamp(0, calc((var(--hero-exit) - 0.95) / 0.05), 1)) 0
+      );
+    }
+
+    /* The bloom. Same two centres, a beat ahead of the hole, painted flat in
+       Positioning's ground rather than in white — which is what keeps it
+       controlled: there is no brighter colour in the transition than the colour it
+       is turning into, so there is nothing for a flash to be brighter than. The
+       last third of each disc is a fade to transparent, so the leading edge is a
+       soft rim on the photograph instead of a drawn circle.
+
+       The linear mask from the small-screen form has to be cleared: here the layer
+       covers the whole frame. */
+    .hero-track .hero-wipe {
+      -webkit-mask-image: none;
+      mask-image: none;
+      background-color: transparent;
+      opacity: 1;
+      background-image:
+        radial-gradient(
+          circle calc(var(--wipe) * 85vmax) at var(--wipe-x-left) var(--wipe-y),
+          var(--paper) 0%,
+          var(--paper) 58%,
+          rgba(245, 242, 238, 0.62) 82%,
+          rgba(245, 242, 238, 0) 100%
+        ),
+        radial-gradient(
+          circle calc(var(--wipe) * 85vmax) at var(--wipe-x-right) var(--wipe-y),
+          var(--paper) 0%,
+          var(--paper) 58%,
+          rgba(245, 242, 238, 0.62) 82%,
+          rgba(245, 242, 238, 0) 100%
+        );
+    }
+
+    /* The photograph going under the light rather than being cut out from behind
+       it. `filter`, not `opacity`, because `fade-in` is the image's entrance and it
+       is filled `both`. Only four tenths: the mask is what removes the frame, and
+       an image faded much further than this reveals the navy underneath and turns
+       the middle of the wipe muddy rather than bright. */
+    .js .hero-track .hero-stage img {
+      filter: opacity(calc(1 - 0.4 * var(--wipe)));
+    }
+
+    /* The lamps and the beacons come up through the middle of the exit and are at
+       full strength at 0.62 — a beat before the wipe starts, not with it. That
+       order is the point of the whole sequence: the headlamps have to be seen to
+       be burning before the light coming out of them is what takes the screen, or
+       the wipe reads as a page transition that happens to be centred on a vehicle
+       rather than as the vehicle's own lights. */
     .hero-track .hero-canvas {
-      --hero-glow: clamp(0, calc((var(--hero-exit) - 0.52) / 0.48), 1);
+      --hero-glow: clamp(0, calc((var(--hero-exit) - 0.28) / 0.34), 1);
     }
 
     /* `filter` rather than `opacity` and `scale`, which `beacon-pulse` owns
@@ -1427,27 +1622,46 @@
       --hero-lead: 0;
       --hero-gone: clamp(
         0,
-        calc((var(--hero-exit) - var(--hero-lead)) / 0.42),
+        calc((var(--hero-exit) - var(--hero-lead)) / 0.22),
         1
       );
-      translate: 0 calc(var(--hero-gone) * -34px);
+
+      /* The last lead plus the window is 0.40 exactly: the buttons are the fifth
+         child and the last thing to go, and the frame is empty on the beat the
+         annotation is allowed to start. Nothing arrives on top of something that
+         is still leaving. */
+      translate: 0 calc(var(--hero-gone) * -46px);
       filter: opacity(calc(1 - var(--hero-gone)));
+
+      /* `filter: opacity(0)` hides a button; it does not stop it being clicked.
+         The last tenth of each child's fade therefore closes its box as well, so
+         an invisible call to action cannot be sitting under the reader's cursor
+         over the middle of the wipe. The 24px bleed is why this is inert at rest:
+         a negative inset expands the clip past the border box, so the copy's own
+         text shadows are never touched until the clip is actually closing. */
+      clip-path: inset(
+        -24px -24px
+          calc(
+            (100% + 48px) * clamp(0, calc((var(--hero-gone) - 0.9) / 0.1), 1) -
+              24px
+          ) -24px
+      );
     }
 
     .hero-copy > :nth-child(2) {
-      --hero-lead: 0.06;
+      --hero-lead: 0.045;
     }
 
     .hero-copy > :nth-child(3) {
-      --hero-lead: 0.12;
+      --hero-lead: 0.09;
     }
 
     .hero-copy > :nth-child(4) {
-      --hero-lead: 0.19;
+      --hero-lead: 0.135;
     }
 
     .hero-copy > :nth-child(5) {
-      --hero-lead: 0.26;
+      --hero-lead: 0.18;
     }
 
     /* The call itself, annotated onto the frame.
@@ -1460,22 +1674,21 @@
        small type and two hairlines drawn straight onto the photograph, no ground
        of their own, nothing blurred and nothing boxed.
 
-       Two windows off the same clock, and the first one is late on purpose. The
-       centred group leaves from the top down — the headline is out at 0.54 and the
-       paragraph under it at 0.61 — and this sits in the band the headline was in,
-       so anything earlier than 0.56 is an annotation drawn across a sentence that
-       has not finished leaving. It is fully there by 0.68, which is where the last
-       of the buttons goes, and gone by 0.90 — before the rail's own fade begins at
-       0.88 has finished, so the last thing on the frame as the hero releases is
-       the route, which is what carries into Positioning. Both are pure functions
-       of the departure, so it draws itself backwards on the way up.
+       Two windows off the same clock, and the first one starts on the beat the
+       frame empties. The centred group's last child is gone at 0.40, so 0.42 is
+       the earliest this can be drawn without being drawn across a sentence that
+       has not finished leaving; it is fully there by 0.52, holds while the route
+       is handed over, and starts going at 0.60 — before the bloom becomes the
+       dominant thing on the frame at 0.65 — so it is off by 0.70 rather than being
+       washed out by the light. Both are pure functions of the departure, so it
+       draws itself backwards on the way up.
 
        25% of the frame with a 15rem column: the photograph puts the vehicle's roof
        around 45% of its height at every desktop ratio, and the deepest this block
        reaches — the tip of its stem — is a little over a third of the way down. */
     .hero-dispatch {
-      --dispatch-in: clamp(0, calc((var(--hero-exit) - 0.56) / 0.12), 1);
-      --dispatch-out: clamp(0, calc((var(--hero-exit) - 0.8) / 0.1), 1);
+      --dispatch-in: clamp(0, calc((var(--hero-exit) - 0.42) / 0.1), 1);
+      --dispatch-out: clamp(0, calc((var(--hero-exit) - 0.6) / 0.1), 1);
       position: absolute;
       top: 25%;
       left: 50%;
@@ -1485,6 +1698,10 @@
       margin-left: -7.5rem;
       pointer-events: none;
       text-align: center;
+      /* Its own ground, the same one the rail's labels carry. This is small type
+         over a photograph rather than over the navy, and the brief asks for it to
+         be readable — a shadow buys that without putting a panel on the frame. */
+      text-shadow: 0 1px 12px rgba(10, 17, 41, 0.9);
       opacity: calc(var(--dispatch-in) * (1 - var(--dispatch-out)));
       /* The `translate` property, not a transform: the centring is done with a
          margin so these two never have to share one declaration. */
@@ -1511,7 +1728,7 @@
       align-items: center;
       justify-content: center;
       gap: 0.45rem;
-      color: rgba(255, 255, 255, 0.68);
+      color: rgba(255, 255, 255, 0.84);
       font-size: 0.5625rem;
       font-weight: 500;
       letter-spacing: 0.3em;
@@ -1531,7 +1748,7 @@
 
     .hero-dispatch-unit {
       margin-top: 0.5rem;
-      color: rgba(255, 255, 255, 0.72);
+      color: rgba(255, 255, 255, 0.9);
       font-size: 0.6875rem;
       letter-spacing: 0.04em;
       line-height: 1.3;
@@ -1539,7 +1756,7 @@
 
     .hero-dispatch-eta {
       margin-top: 0.35rem;
-      color: rgba(255, 255, 255, 0.92);
+      color: #ffffff;
       font-size: 0.8125rem;
       font-weight: 500;
       letter-spacing: 0.2em;
@@ -1564,17 +1781,25 @@
     }
 
     /* The rail now outlasts the copy by much more than it did unpinned. The last
-       child of the group is gone at 0.68; the rail holds full strength until 0.88
-       and then goes in the final eighth, so there is a stretch in the middle of
+       child of the group is gone at 0.40; the rail holds full strength until 0.68
+       and then goes over the next tenth, so there is a stretch in the middle of
        the departure where the route is the only thing on the frame. That stretch
-       is the point of the sequence. */
+       is the point of the sequence.
+
+       0.68 is not a taste call. The rail stands at about 91% of the frame's height
+       and the headlamps at 75%, so the expanding mask reaches the rail very early
+       in the wipe — a rail still at full strength then would be cut in half by the
+       hole rather than seen to leave. It therefore has to be gone by the time the
+       light arrives, which also means the handover strokes below have to finish
+       before the wipe rather than during it. */
     .hero-canvas .hero-rail {
-      opacity: clamp(0, calc((1 - var(--hero-exit)) / 0.12), 1);
+      opacity: clamp(0, calc((0.78 - var(--hero-exit)) / 0.1), 1);
 
       /* The rail's own clock, rescaled from the departure. It starts a beat after
-         the copy does and finishes at 0.66, which leaves a third of the track for
-         the route to turn down out of the frame. */
-      --rail-t: clamp(0, calc((var(--hero-exit) - 0.06) / 0.6), 1);
+         the copy does and the signal settles on CARE at 0.46, which leaves the
+         whole of the annotation's hold for the route to be handed across the frame
+         to the next section's first column. */
+      --rail-t: clamp(0, calc((var(--hero-exit) - 0.04) / 0.42), 1);
     }
 
     /* Scroll takes the rail off the wall clock. The four loop animations are
@@ -1623,36 +1848,102 @@
       transform: scale(calc(1 + 1.4 * var(--rail-near)));
     }
 
-    /* The route leaving. Once the signal has reached CARE the line turns down out
-       of the hero — a short tick below the labels, because the hero clips its own
-       overflow and there are only a few pixels of runway under the rail — and is
-       picked up at the top of Positioning by `.route-drop`, which is the same red
-       at the same 87.5% offset inside the same `.shell`. Two elements, one line:
-       both are scaled from `--hero-exit`, which is on `:root` and therefore
-       inherits into both sections. */
+    /* The route being handed over, in four strokes drawn in order.
+
+       The hero's last stop is CARE, at 87.5% of the shell; the next section's first
+       node is PATIENT REQUEST, at 10% of the same shell, and on a pinned screen it
+       sits *above* the rail rather than below it. A single line running downward
+       from one to the other is therefore not a thing that can be drawn. What is
+       drawn instead is a line that moves: down out of CARE, left along the foot of
+       the photograph to the column PATIENT REQUEST stands in, down out of the frame
+       there, and then — inside the light the wipe leaves behind — down into the
+       node itself. One line, four segments, two sections; all four scaled from
+       `--hero-exit`, which is on `:root` and so inherits into both.
+
+       The elbow sits at 3.4rem below the rail's midline, which is clear of the
+       stage labels: the horizontal run has to pass under all four of them, and a
+       carry drawn at the midline would strike straight through the words.
+
+       The first three are finished by 0.68 because the mask has reached the bottom
+       of the frame by then; the fourth begins at 0.84, in the paper. */
     .hero-drop,
-    .route-drop {
+    .hero-carry,
+    .hero-lead,
+    .pos-drop {
       display: block;
+    }
+
+    .hero-drop,
+    .hero-lead,
+    .pos-drop {
       width: 1px;
       transform-origin: top center;
-      transform: scaleY(clamp(0, calc((var(--hero-exit) - 0.68) / 0.3), 1));
+    }
+
+    .hero-drop,
+    .hero-carry,
+    .hero-lead {
       background-image: linear-gradient(
         to bottom,
         rgba(237, 28, 36, 0.9),
+        rgba(237, 28, 36, 0.55)
+      );
+    }
+
+    /* Down out of CARE, stopping at the elbow. Clear of the CARE label rather than
+       starting at the rail's midline, which would draw through the word — and no
+       lower than it has to be, because everything after it has to fit between the
+       elbow and the bottom of the frame. */
+    .hero-drop {
+      top: calc(50% + 2.1rem);
+      height: 0.8rem;
+      transform: scaleY(clamp(0, calc((var(--hero-exit) - 0.46) / 0.08), 1));
+    }
+
+    /* Left along the foot of the frame, drawn from the CARE end so it reads as the
+       line travelling rather than as a rule appearing. */
+    .hero-carry {
+      top: calc(50% + 2.9rem);
+      height: 1px;
+      transform-origin: right center;
+      transform: scaleX(clamp(0, calc((var(--hero-exit) - 0.52) / 0.1), 1));
+      background-image: linear-gradient(
+        to left,
+        rgba(237, 28, 36, 0.9),
+        rgba(237, 28, 36, 0.5)
+      );
+    }
+
+    /* Down out of the frame in the handover column. The hero clips its own
+       overflow, so the last of this is cut by the frame edge — which is the point:
+       the line leaves rather than stopping. */
+    .hero-lead {
+      top: calc(50% + 2.9rem);
+      height: 2.5rem;
+      transform: scaleY(clamp(0, calc((var(--hero-exit) - 0.6) / 0.08), 1));
+      background-image: linear-gradient(
+        to bottom,
+        rgba(237, 28, 36, 0.7),
         rgba(237, 28, 36, 0)
       );
     }
 
-    /* Clear of the CARE label rather than starting at the rail's midline, which
-       would draw straight through the word. */
-    .hero-drop {
-      top: calc(50% + 2.4rem);
-      height: 4rem;
-    }
-
-    .route-drop {
-      top: 0;
-      height: 100%;
+    /* And into PATIENT REQUEST, out of the light. It stands in the gap the
+       schematic's top margin opens over it — 2.5rem at this breakpoint — so it
+       crosses no type on the way in, and it darkens downward so the line appears to
+       condense out of the paper onto the node. */
+    .pos-drop {
+      top: -2.5rem;
+      /* The schematic's top margin plus the 8px from the top of its box down to
+         the centre of its first node, so the line lands *on* PATIENT REQUEST
+         rather than stopping at the edge of the diagram that contains it. */
+      height: calc(2.5rem + 8px);
+      transform: scaleY(clamp(0, calc((var(--hero-exit) - 0.84) / 0.16), 1));
+      background-image: linear-gradient(
+        to bottom,
+        rgba(237, 28, 36, 0),
+        rgba(237, 28, 36, 0.9)
+      );
     }
   }
 
@@ -1669,6 +1960,40 @@
   @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
     .pos-track {
       height: 240vh;
+
+      /* The band has to be behind the hero to be revealed from under it, so it is
+         lapped back by exactly one pinned hero screen. That removes the dead strip
+         the two sections used to leave between them — the hero's clock finished
+         half a screen before the hero stopped scrolling, and the whole of that
+         distance was bare paper with nothing on it — and it makes the handover
+         exact: the wipe completes on the same frame this stage locks under the
+         header, which is also why the network's own draw has not started yet.
+
+         The lap is on the track and not on the section, which matters: the
+         section's box stays where the document put it, so the journey tracker
+         still finds station 01 at an offset that means something rather than
+         lighting it while the reader is still on the hero.
+
+         `--hero-lap` is the canvas's measured height, written by `HeroMotion`
+         because the canvas carries a `min-height` and can be taller than a screen
+         when the copy wraps. The fallback is the same figure in viewport units, so
+         the very first paint is already correct and there is nothing to shift. */
+      margin-top: var(--hero-lap, calc(var(--header-h) - 100vh));
+
+      /* The section's own `bg-paper` only paints the section's own box, and the
+         track now starts a screen above it. Without this, the lapped screen is
+         transparent and the wipe merges into the page behind it. */
+      background-color: var(--paper);
+    }
+
+    /* The lapped track is the first in-flow child, so its negative margin would
+       collapse straight out through a parent with no top padding and drag the
+       section itself up with it. `flow-root` is a block box that does not let
+       margins through — nothing else about the layout changes. */
+    #positioning {
+      display: flow-root;
+      z-index: 0;
+      padding-top: 0;
     }
 
     .pos-stage {
@@ -1678,6 +2003,37 @@
       flex-direction: column;
       justify-content: center;
       min-height: calc(100vh - var(--header-h));
+    }
+
+    /* Positioning arriving inside the light.
+
+       0.78 is where the mask's hole reaches the top third of the frame, so the
+       label starts coming up on the frame the paper opens over it rather than
+       before or after. The statement has its own slightly later window below, so
+       the label leads it — the reader is given the section's number and name, then
+       its sentence, in that order, which is the order they are read in.
+
+       Scoped to `.js` because it hides content. The pinned rules are not gated on
+       JavaScript — a static hero holding its arrival state is a perfectly good page
+       — but an opacity driven by a property nobody is writing would leave this band
+       blank, and the whole argument of the page is in it. */
+    .js .pos-track .pos-stage {
+      --pos-in: clamp(0, calc((var(--hero-exit) - 0.78) / 0.16), 1);
+      opacity: var(--pos-in);
+      translate: 0 calc((1 - var(--pos-in)) * 18px);
+    }
+
+    /* The statement, a beat behind its label and with a shorter rise: restrained is
+       the brief, and a manifesto sentence that travels as far as its own eyebrow
+       reads as sliding rather than as settling.
+
+       On the paragraph, not on the `Reveal` wrapper around it: that element owns
+       its own opacity and transform for the unpinned page and a second author of
+       either would simply overwrite the first. */
+    .js .pos-track .pos-line {
+      --pos-line-in: clamp(0, calc((var(--hero-exit) - 0.86) / 0.14), 1);
+      opacity: var(--pos-line-in);
+      translate: 0 calc((1 - var(--pos-line-in)) * 14px);
     }
 
     /* `--flow-draw` is written every frame, so the edge needs no transition: it
@@ -2350,6 +2706,17 @@
     clip-path: inset(0);
     opacity: 1;
     transform: none;
+  }
+
+  /* The light wipe is not drawn at all. None of the pinned rules exist under this
+     preference — the hero holds its arrival state, Positioning sits below it in
+     normal flow, and the change from the dark band to the light one is the ordinary
+     boundary between two sections, which is the immediate static transition the
+     brief asks for. The wipe layer's own resting opacity is already nothing at
+     `--hero-exit: 0`, but it is taken out of the paint entirely so there is no
+     full-screen composited layer earning its keep by being invisible. */
+  .hero-wipe {
+    display: none;
   }
 
   /* The route is drawn in full from the first frame. `NetworkFlow` writes

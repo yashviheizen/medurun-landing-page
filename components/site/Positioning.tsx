@@ -17,8 +17,15 @@ import { networkFlow, positioning } from "@/data/site";
  * one thought, and About brings its own top padding, so two full-height bands
  * stacked would leave a dead strip between them.
  *
- * On a desktop frame the whole thing is pinned. The statement and the schematic
- * hold under the header while a ~240vh track scrolls past them, and that scroll is
+ * On a desktop frame the whole thing is pinned, and it is lapped back over the
+ * hero: `.pos-track` carries a negative margin the height of one pinned hero
+ * screen, so this band is already standing behind the hero when the hero's
+ * headlamps wipe it away, and the two never leave a strip of bare paper between
+ * them. The section's own box stays where it was — the lap is on the track, not on
+ * the section — so the journey tracker still finds station 01 at a sane offset.
+ *
+ * The statement and the schematic hold under the header while a ~240vh track
+ * scrolls past them, and that scroll is
  * what routes the network: the line draws, the five stages come on in order with
  * their status revealed as each is reached, and the band lets go once the route is
  * complete. `NetworkFlow` reads the track it is standing in and needs nothing
@@ -34,25 +41,6 @@ export function Positioning() {
     >
       <SignalRail tone="paper" />
 
-      {/* The hero's dispatch route, arriving. It picks up at the same offset in
-          the same shell the rail's CARE stop sits at, so the line that turned down
-          out of the hero is the line that comes into this band — and it is drawn
-          by `--hero-exit`, the hero's own clock, rather than by a second one that
-          would have to be kept in step with it. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0"
-      >
-        <div className="shell">
-          <div className="relative h-20">
-            <span
-              className="route-drop absolute top-0"
-              style={{ left: "87.5%" }}
-            />
-          </div>
-        </div>
-      </div>
-
       <div className="pos-track">
         <div className="pos-stage">
           <div className="shell relative">
@@ -62,7 +50,12 @@ export function Positioning() {
             </p>
 
             <Reveal>
-              <p className="mt-8 max-w-[52ch] font-serif text-[1.65rem] leading-[1.24] tracking-[-0.015em] text-ink sm:text-[2.2rem] lg:text-[2.75rem]">
+              {/* `pos-line` is the light wipe's hook, not a style: the statement
+                  arrives a beat behind the label it sits under, and the class is
+                  what the pinned reveal is written against. It has to be on the
+                  paragraph rather than on the `Reveal` wrapper, which owns its own
+                  opacity and transform for the unpinned page. */}
+              <p className="pos-line mt-8 max-w-[52ch] font-serif text-[1.65rem] leading-[1.24] tracking-[-0.015em] text-ink sm:text-[2.2rem] lg:text-[2.75rem]">
                 {positioning}
               </p>
             </Reveal>
@@ -82,7 +75,18 @@ export function Positioning() {
                 </p>
               </div>
 
-              <div className="mt-8 lg:mt-10">
+              <div className="relative mt-8 lg:mt-10">
+                {/* The hero's dispatch route, arriving. The rail above sent it
+                    down out of CARE and across the foot of the photograph into
+                    this column; this is the last stroke, dropping into PATIENT
+                    REQUEST out of the light the wipe has just left behind. It
+                    stands in the gap over the schematic, so it crosses no type,
+                    and it is drawn by `--hero-exit` — the hero's own clock, not a
+                    second one that would have to be kept in step with it. */}
+                <span
+                  aria-hidden="true"
+                  className="pos-drop absolute left-[10%]"
+                />
                 <NetworkFlow stages={networkFlow} />
               </div>
             </Reveal>

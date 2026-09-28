@@ -58,6 +58,20 @@ const STEP = 100 / STAGES.length;
 const centre = (index: number) => STEP * index + STEP / 2;
 
 /**
+ * Where the route hands over to the Positioning network, as a percentage of the
+ * shell.
+ *
+ * The network below is five columns wide and its first node — PATIENT REQUEST —
+ * stands at the centre of the first one, which is `100 / 5 / 2`. Both rails live
+ * inside the same `.shell`, so writing that number here puts the handover in the
+ * same column of the page as the node it hands to. It is a literal rather than an
+ * import because the network's geometry lives in a client component and its stage
+ * count comes from the content file; five is the shape of the schematic, not a
+ * value that varies.
+ */
+const HANDOVER = 100 / 5 / 2;
+
+/**
  * Where the signal is along its run when it draws level with each stop, 0 to 1.
  * These are `rail-run`'s own stops in the fraction notation `calc()` can use: the
  * signal advances for 28% of the run, holds for 6% at the stop it has reached, and
@@ -140,15 +154,25 @@ export function DispatchRail({
           </span>
         </span>
 
-        {/* The route leaving the frame. As the signal settles on CARE the red line
-            turns down out of the hero and is picked up again at the top of the
-            band below, at this same offset in the same shell — one line crossing
-            the seam rather than two sections that happen to both have red in them.
-            It exists only where the hero is pinned; see `.hero-drop`. */}
+        {/* The route leaving the frame, in three strokes: down out of CARE, left
+            across the foot of the photograph to the column the next section's
+            first node stands in, and then down out of the frame. Positioning
+            picks it up there — see `.pos-drop` — so what crosses the light wipe
+            is one line that has moved from the hero's last stop to the network's
+            first one, rather than two sections that happen to both have red in
+            them. All three exist only where the hero is pinned; see `.hero-drop`. */}
         <span
           className="hero-drop absolute"
           style={{ left: `${centre(STAGES.length - 1)}%` }}
         />
+        <span
+          className="hero-carry absolute"
+          style={{
+            left: `${HANDOVER}%`,
+            width: `${centre(STAGES.length - 1) - HANDOVER}%`,
+          }}
+        />
+        <span className="hero-lead absolute" style={{ left: `${HANDOVER}%` }} />
 
         {STAGES.map((stage, index) => {
           const last = index === STAGES.length - 1;

@@ -29,8 +29,9 @@ const SPAN = 0.75;
  * number without either section holding a reference to the other. The hero reads
  * it by inheritance like anything else.
  *
- * On a desktop frame the hero is pinned: it holds under the header while a ~150vh
- * track scrolls past it, and the progress through that track is the clock. Below
+ * On a desktop frame the hero is pinned: it holds under the header while a 200vh
+ * track scrolls past it, and the progress through that track is the clock — one
+ * screen of pin, which the four beats of the light wipe are timed against. Below
  * `lg`, or for a reader who has asked for less motion, there is no track at all —
  * the hero occupies exactly the height it always did, the section below arrives at
  * exactly the scroll position it always did, and the exit is the shorter pass it
@@ -65,6 +66,33 @@ export function HeroMotion() {
       return;
     }
 
+    /**
+     * How far the Positioning section is pulled up under the hero, in pixels,
+     * negative.
+     *
+     * The light wipe erases the hero from the headlamps outwards and the section
+     * underneath has to already be there to be erased *into*, so Positioning is
+     * lapped back over the hero's own pinned screen — see `.pos-track` in
+     * globals.css. The exact number is the canvas's height, and it has to be the
+     * measured one rather than `100vh - header`: the canvas carries a
+     * `min-height`, not a height, so a long line of copy at a narrow desktop
+     * width can make it taller than a screen, and a lap that is short by even a
+     * few pixels is a band of bare paper between the two sections.
+     *
+     * Written on mount, when the pinned query flips, and when the canvas changes
+     * size — never per frame. It is a layout-affecting value, so recomputing it
+     * on scroll would cost a reflow every frame to learn a number that cannot
+     * have changed. The stylesheet's own fallback is the same figure expressed in
+     * viewport units, so the first paint is already right and there is nothing to
+     * shift.
+     */
+    const lap = () =>
+      root.style.setProperty("--hero-lap", `${-canvas.offsetHeight}px`);
+
+    lap();
+    const sizing = new ResizeObserver(lap);
+    sizing.observe(canvas);
+
     let pinned = false;
     let off: (() => void) | null = null;
 
@@ -78,6 +106,7 @@ export function HeroMotion() {
 
     const stop = onPinned((on) => {
       pinned = on;
+      lap();
       // Resubscribing rather than branching inside the listener, so that the one
       // frame a breakpoint is crossed on is measured under the new geometry — the
       // track's height changes in the same layout pass the query flips in.
@@ -88,7 +117,9 @@ export function HeroMotion() {
     return () => {
       stop();
       off?.();
+      sizing.disconnect();
       root.style.removeProperty("--hero-exit");
+      root.style.removeProperty("--hero-lap");
     };
   }, []);
 
