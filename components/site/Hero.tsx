@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { AmbulanceOutline } from "@/components/illustrations/AmbulanceOutline";
 import { DispatchRail } from "@/components/illustrations/DispatchRail";
 import { company, hero } from "@/data/site";
 import { asset } from "@/lib/asset";
@@ -25,9 +26,10 @@ import { HeroMotion } from "@/components/site/HeroMotion";
  *
  * Three things are stacked and they never cross:
  *
- *   `.hero-stage`   the photograph, the veil and the roof lamps, in one box that
- *                   carries the standing scale so all three move together and the
- *                   lamps cannot slide off the light bar.
+ *   `.hero-stage`   the photograph, the veil, the roof lamps and the line drawing
+ *                   of the ambulance, in one box that carries the standing scale so
+ *                   they all move together — the lamps cannot slide off the light
+ *                   bar and the drawing cannot slide off the bodywork it traces.
  *   the copy group   logo, eyebrow, headline, sentence, actions — centred in what
  *                   is left after the rail, so the vertical centre is the copy's
  *                   own, not the section's.
@@ -117,6 +119,25 @@ export function Hero() {
             what changes is only how near the vehicle gets. */}
           <span className="hero-lamp hero-lamp--left" />
           <span className="hero-lamp hero-lamp--right" />
+
+          {/* The drawn ambulance, over the photographed one. Both of these boxes
+            are placed by the identical crop arithmetic, so they occupy exactly
+            the same rectangle of the bodywork — the difference is that the
+            outline is the one that moves. `.amb-anchor` never is: it is an empty
+            box that stays where the drawing rests, and `HeroMotion` measures it
+            against the network's `Ambulance Assigned` node every frame to work
+            out how far the drawing has to travel. Measuring the outline itself
+            would mean measuring a thing through the transform being derived from
+            the measurement, which does not converge.
+
+            Inside `.hero-stage` on purpose: `cq` units only resolve inside the
+            size container, and being under the same parent means the drawing
+            inherits the photograph's own standing drift rather than sliding
+            against it. That parent's transform is why the anchor is given a real
+            size — its measured width over its layout width is the scale factor
+            the travel has to be divided by. */}
+          <span className="amb-anchor" />
+          <AmbulanceOutline />
         </div>
 
         <div className="hero-shell shell relative flex min-h-0 flex-1 flex-col pb-7 pt-9 sm:pb-8 sm:pt-11 lg:pb-10 lg:pt-14">
@@ -211,30 +232,12 @@ export function Hero() {
           <DispatchRail align="center" className="mt-9 shrink-0 sm:mt-10" />
         </div>
 
-        {/* The call, annotated onto the frame once the centred group has started to
-          go. It exists only inside the pinned departure — see `.hero-dispatch` —
-          and it is deliberately not a panel: three lines of small type and two
-          hairlines, drawn straight onto the photograph, in the space the headline
-          has just vacated and well above the vehicle at every desktop height. */}
-        <div className="hero-dispatch" aria-hidden="true">
-          <span className="hero-dispatch-rule" />
-          <p className="hero-dispatch-tag">
-            <span className="hero-dispatch-dot" />
-            Live request
-          </p>
-          <p className="hero-dispatch-unit">Unit M-24 · Ambulance assigned</p>
-          <p className="hero-dispatch-eta">ETA 08 min</p>
-          <span className="hero-dispatch-stem" />
-        </div>
-
-        {/* The light wipe: the hero's own headlamps turning the frame into the
-          paper the next section is printed on. Two soft paper-coloured discs
-          centred on the lamps in the photograph, expanding with the scroll until
-          they have merged into one full screen of Positioning's exact ground —
-          and the canvas itself is masked out from the same two centres a beat
-          behind, so the leading edge reads as a bright ring with the real section
-          already showing inside it. Painted last so it is over the photograph,
-          the annotation and the rail alike. See `.hero-wipe`. */}
+        {/* The crossfade below `lg`, where there is no pinned track to draw a
+          transition across: a band of Positioning's exact ground fading up over
+          the bottom quarter of the frame, so the seam between the navy and the
+          paper dissolves rather than scrolling past. On a desktop viewport the
+          background does that job itself and this layer is not painted at all.
+          See `.hero-wipe`. */}
         <span className="hero-wipe" aria-hidden="true" />
       </section>
     </div>

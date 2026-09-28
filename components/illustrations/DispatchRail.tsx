@@ -32,17 +32,21 @@ import type { CSSProperties } from "react";
  * cannot drift out of step with the signal that reaches it, because neither of
  * them knows a duration in milliseconds.
  *
- * That 4s cycle is the rail's clock at rest. Inside the pinned hero on a desktop
- * viewport the stylesheet takes the clock away — every one of those animations is
- * set to `none` — and drives the same parts from `--hero-exit` instead, so the
- * signal's single walk to CARE is the reader's own scroll rather than a loop
- * running beside it. `--rail-at` is what both clocks share: it is a position, not
- * a time, which is why neither had to be written twice.
+ * That 4s cycle is the rail's clock everywhere, pinned hero included. It used to be
+ * taken away on a desktop viewport and re-derived from `--hero-exit`, because the
+ * rail outlasted the copy by half a screen and a loop running next to a scroll that
+ * had stopped read as two clocks. It does not outlast the copy any more — the
+ * departure clears the whole frame inside its first quarter so the drawing has a
+ * clean photograph to be traced on — so the loop is short enough to be a standing
+ * signal again rather than something the reader waits through.
  *
- * `.hero-drop` is the last of those stops' continuation: a short red line under
- * CARE that extends as the signal arrives there, aimed at `.route-drop` at the
- * top of Positioning and sitting at the same 87.5% of the shell, so the route
- * appears to carry on into the network below rather than ending with the section.
+ * The rail does not hand the route over to the section below any more. It used to
+ * — three red strokes ran out of CARE, along the foot of the photograph and down
+ * out of the frame, to be picked up at the top of Positioning — and that is now
+ * the ambulance's job: the vehicle in the photograph is drawn, shrunk and carried
+ * into the network as its `Ambulance Assigned` node, which is a handover the reader
+ * can follow because it is an object moving rather than a line appearing. So the
+ * rail simply leaves with the copy above it. See `.hero-outline`.
  *
  * Every resting state is still declared in the markup — line drawn, segment
  * complete, dot on CARE, all four stops lit. The animations only supply the way
@@ -58,20 +62,6 @@ const STEP = 100 / STAGES.length;
 const centre = (index: number) => STEP * index + STEP / 2;
 
 /**
- * Where the route hands over to the Positioning network, as a percentage of the
- * shell.
- *
- * The network below is five columns wide and its first node — PATIENT REQUEST —
- * stands at the centre of the first one, which is `100 / 5 / 2`. Both rails live
- * inside the same `.shell`, so writing that number here puts the handover in the
- * same column of the page as the node it hands to. It is a literal rather than an
- * import because the network's geometry lives in a client component and its stage
- * count comes from the content file; five is the shape of the schematic, not a
- * value that varies.
- */
-const HANDOVER = 100 / 5 / 2;
-
-/**
  * Where the signal is along its run when it draws level with each stop, 0 to 1.
  * These are `rail-run`'s own stops in the fraction notation `calc()` can use: the
  * signal advances for 28% of the run, holds for 6% at the stop it has reached, and
@@ -83,11 +73,11 @@ const ARRIVE = [0, 0.28, 0.62, 0.96] as const;
  * The stop's own position, handed to the CSS clock as `--rail-at`, plus whether it
  * is lit before the signal has moved at all.
  *
- * Only REQUEST is. On a desktop frame the signal is driven by the scroll rather
- * than by a loop (see `--rail-t` in globals.css), so at rest the run has not
- * started — and a run that has not started is one that is standing on its first
- * stop, not one with no stops lit. `--rail-on` is that floor, and it is zero
- * everywhere else because those stages genuinely have not happened yet.
+ * Only REQUEST is. Before the first run has moved at all — the reader's first
+ * frame, or any frame under `prefers-reduced-motion` — the signal is standing on
+ * its first stop rather than nowhere, so that stop is lit. `--rail-on` is that
+ * floor, and it is zero everywhere else because those stages genuinely have not
+ * happened yet.
  */
 const at = (index: number) =>
   ({
@@ -153,26 +143,6 @@ export function DispatchRail({
             <span className="absolute left-0 top-1/2 block h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red shadow-[0_0_0_5px_rgba(237,28,36,0.2),0_0_14px_5px_rgba(237,28,36,0.4)]" />
           </span>
         </span>
-
-        {/* The route leaving the frame, in three strokes: down out of CARE, left
-            across the foot of the photograph to the column the next section's
-            first node stands in, and then down out of the frame. Positioning
-            picks it up there — see `.pos-drop` — so what crosses the light wipe
-            is one line that has moved from the hero's last stop to the network's
-            first one, rather than two sections that happen to both have red in
-            them. All three exist only where the hero is pinned; see `.hero-drop`. */}
-        <span
-          className="hero-drop absolute"
-          style={{ left: `${centre(STAGES.length - 1)}%` }}
-        />
-        <span
-          className="hero-carry absolute"
-          style={{
-            left: `${HANDOVER}%`,
-            width: `${centre(STAGES.length - 1) - HANDOVER}%`,
-          }}
-        />
-        <span className="hero-lead absolute" style={{ left: `${HANDOVER}%` }} />
 
         {STAGES.map((stage, index) => {
           const last = index === STAGES.length - 1;

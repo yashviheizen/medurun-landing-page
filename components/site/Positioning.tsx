@@ -50,7 +50,7 @@ export function Positioning() {
             </p>
 
             <Reveal>
-              {/* `pos-line` is the light wipe's hook, not a style: the statement
+              {/* `pos-line` is the transition's hook, not a style: the statement
                   arrives a beat behind the label it sits under, and the class is
                   what the pinned reveal is written against. It has to be on the
                   paragraph rather than on the `Reveal` wrapper, which owns its own
@@ -76,16 +76,19 @@ export function Positioning() {
               </div>
 
               <div className="relative mt-8 lg:mt-10">
-                {/* The hero's dispatch route, arriving. The rail above sent it
-                    down out of CARE and across the foot of the photograph into
-                    this column; this is the last stroke, dropping into PATIENT
-                    REQUEST out of the light the wipe has just left behind. It
-                    stands in the gap over the schematic, so it crosses no type,
-                    and it is drawn by `--hero-exit` — the hero's own clock, not a
-                    second one that would have to be kept in step with it. */}
+                {/* The route leaving the ambulance. The drawing of the vehicle
+                    from the hero has just been flown down into this column and
+                    shrunk onto the third node — see `.hero-outline` — and this is
+                    the thread that connects the two: a thin red line extending
+                    from where the ambulance came to rest into AMBULANCE ASSIGNED
+                    itself. 50% because that is the centre of the third of five
+                    columns, which is where the node it lands on stands; it is in
+                    the gap over the schematic so it crosses no type, and it is
+                    drawn by `--hero-exit` — the hero's own clock, not a second one
+                    that would have to be kept in step with it. */}
                 <span
                   aria-hidden="true"
-                  className="pos-drop absolute left-[10%]"
+                  className="pos-drop absolute left-[50%]"
                 />
                 <NetworkFlow stages={networkFlow} />
               </div>

@@ -70,14 +70,23 @@ const TAIL = 0.42;
  * The pinned track's own window: the share of it spent before the line starts and
  * the share it is drawn over.
  *
- * The lead is the beat after the band settles under the header and before anything
- * happens to it — a pinned section that starts moving on the same frame it stops
- * moving reads as a glitch. The span closes well short of 1 so the finished
- * network is held, complete and lit, for the last fifth of the track: the section
- * gets to make its point before it is allowed to leave.
+ * The lead is no longer just a beat of settling. The band now begins sticking a good
+ * way *before* the hero's own clock has finished — it is lapped back far enough that
+ * the third node is a stationary target for the ambulance being flown into it, which
+ * is what `--pos-early` in globals.css buys — so the first tenth of this track is the
+ * end of the hero's departure happening over the top of it: the ground turning to
+ * paper, the drawing travelling down, the label and the statement arriving. 0.10 is
+ * that overlap measured, not guessed. The hero's transition brief hands the route over
+ * at 72% of the hero's clock, and 0.72 of the hero's travel lands at 0.102 of this one
+ * at every desktop ratio from 1024×768 up, because both travels are the same linear
+ * function of the viewport height.
+ *
+ * The span still closes well short of 1 so the finished network is held, complete and
+ * lit, for the last fifth of the track: the section gets to make its point before it
+ * is allowed to leave.
  */
-const LEAD = 0.06;
-const DRAW = 0.78;
+const LEAD = 0.1;
+const DRAW = 0.72;
 
 /**
  * Where the whole network comes up together, and where it lets go again.
@@ -254,6 +263,11 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
           return (
             <li
               key={stage.id}
+              /* Which stage this is, for anything outside the component that needs
+                 to find one. The hero's ambulance drawing is flown onto `assigned`,
+                 and it locates it by this rather than by an index, so reordering the
+                 route in `data/site.ts` cannot silently aim it at the wrong node. */
+              data-stage={stage.id}
               data-lit={lit ? "true" : "false"}
               data-active={active ? "true" : "false"}
               data-state={state}
@@ -269,8 +283,13 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
                 />
               ) : null}
 
+              {/* `flow-mark` is a handle rather than a style: `HeroMotion` measures
+                  this box on the `Ambulance Assigned` stage every frame to work out
+                  where the hero's ambulance drawing has to fly to. A class, not an
+                  id, because every stage has one and which of them is the target is
+                  the hero's business to decide, not this component's. */}
               <span
-                className="relative flex h-4 w-4 shrink-0 items-center justify-center"
+                className="flow-mark relative flex h-4 w-4 shrink-0 items-center justify-center"
                 style={at}
               >
                 {/* The stage acknowledging the route reaching it: one ring out, once,
