@@ -102,8 +102,23 @@ export const about = {
     title: "Our mission",
     body: "To provide immediate, reliable, and accessible emergency healthcare transportation and support services anytime, anywhere.",
   },
+  /**
+   * Every remote photograph on the page carries the same four query parameters,
+   * and they are not decoration. The GitHub Pages build is a static export, so
+   * `next.config.mjs` turns the image optimiser off — there is no server to
+   * resize through — which means whatever URL is written here is exactly what a
+   * phone downloads. Bare, these are Unsplash's originals: between 1.3MB and
+   * 6.8MB each, roughly 15MB of photography for a page whose largest picture
+   * box is a few hundred CSS pixels wide, and the 6.8MB one did not decode in
+   * mobile Safari or Chrome at all — it rendered as a blank frame on the live
+   * site. `w=1400&q=70&auto=format` asks Unsplash's own CDN for a derivative
+   * instead: still sharp on a 2x display at the widest box the page gives a
+   * photograph, `auto=format` serving WebP where it is accepted, and about a
+   * tenth of the bytes. `fit=crop` keeps the aspect handling Unsplash's, so a
+   * resized frame is cropped the way the photographer's own crop box was.
+   */
   image: {
-    src: "https://images.unsplash.com/photo-1686797366685-6420f4bd9c2f",
+    src: "https://images.unsplash.com/photo-1686797366685-6420f4bd9c2f?auto=format&fit=crop&w=1400&q=70",
     alt: "An advanced life support ambulance parked on an Indian street with its rear doors open and a crew member alongside",
   },
   /**
@@ -131,7 +146,7 @@ export const services: Service[] = [
     body: "Rapid ambulance dispatch when minutes are the difference — coordinated through a single digital network.",
     icon: "ambulance",
     image: {
-      src: "https://images.unsplash.com/photo-1780570348966-051be4416237",
+      src: "https://images.unsplash.com/photo-1780570348966-051be4416237?auto=format&fit=crop&w=1400&q=70",
       alt: "Two crew members loading a patient on a stretcher into the back of an ambulance",
     },
   },
@@ -142,7 +157,7 @@ export const services: Service[] = [
     body: "Planned inter-facility movement with visibility for families, hospitals, and the crew on the road.",
     icon: "transfer",
     image: {
-      src: "https://images.unsplash.com/photo-1696243144290-792f1f48339e",
+      src: "https://images.unsplash.com/photo-1696243144290-792f1f48339e?auto=format&fit=crop&w=1400&q=70",
       alt: "The inside of an ambulance with a stretcher secured and crew seating ready for a planned transfer",
     },
   },
@@ -153,7 +168,7 @@ export const services: Service[] = [
     body: "On-demand medical support routed to the right responder, without the usual chain of phone calls.",
     icon: "assistance",
     image: {
-      src: "https://images.unsplash.com/photo-1648964388258-e71b58683ed0",
+      src: "https://images.unsplash.com/photo-1648964388258-e71b58683ed0?auto=format&fit=crop&w=1400&q=70",
       alt: "A masked ambulance crew member giving oxygen to a patient seated inside the vehicle",
     },
   },
@@ -164,7 +179,7 @@ export const services: Service[] = [
     body: "Movement of patients, teams, and medical resources on one operational layer.",
     icon: "logistics",
     image: {
-      src: "https://images.unsplash.com/photo-1782835430483-283b2cfb4256",
+      src: "https://images.unsplash.com/photo-1782835430483-283b2cfb4256?auto=format&fit=crop&w=1400&q=70",
       alt: "The interior of an ambulance stocked with monitoring and airway equipment",
     },
   },
@@ -175,7 +190,7 @@ export const services: Service[] = [
     body: "A shared system for agencies, drivers, and hospitals to work as one emergency network.",
     icon: "agency",
     image: {
-      src: "https://images.unsplash.com/photo-1783348428738-4130e9742223",
+      src: "https://images.unsplash.com/photo-1783348428738-4130e9742223?auto=format&fit=crop&w=1400&q=70",
       alt: "A line of ambulances parked nose-out and ready for assignment",
     },
   },
@@ -195,7 +210,7 @@ export const driverPartner = {
   meta: ["Verified request", "Clear destination", "Live support"],
   contact: emails.operations,
   image: {
-    src: "https://images.unsplash.com/photo-1696243144413-503bc482a608",
+    src: "https://images.unsplash.com/photo-1696243144413-503bc482a608?auto=format&fit=crop&w=1400&q=70",
     alt: "The cab and patient compartment of an ambulance seen from the crew door, stretcher loaded and ready",
   },
 } as const;
@@ -214,7 +229,7 @@ export const agencyPartner = {
   meta: ["Shared visibility", "Fleet coordination", "Hospital network"],
   contact: emails.business,
   image: {
-    src: "https://images.unsplash.com/photo-1716305150577-9f5b374a60bc",
+    src: "https://images.unsplash.com/photo-1716305150577-9f5b374a60bc?auto=format&fit=crop&w=1400&q=70",
     alt: "A basic life support ambulance standing at its base between assignments",
   },
 } as const;
