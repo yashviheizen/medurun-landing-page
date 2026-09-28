@@ -210,6 +210,22 @@ export function Hero() {
             shell under the centred group. */}
           <DispatchRail align="center" className="mt-9 shrink-0 sm:mt-10" />
         </div>
+
+        {/* The call, annotated onto the frame once the centred group has started to
+          go. It exists only inside the pinned departure — see `.hero-dispatch` —
+          and it is deliberately not a panel: three lines of small type and two
+          hairlines, drawn straight onto the photograph, in the space the headline
+          has just vacated and well above the vehicle at every desktop height. */}
+        <div className="hero-dispatch" aria-hidden="true">
+          <span className="hero-dispatch-rule" />
+          <p className="hero-dispatch-tag">
+            <span className="hero-dispatch-dot" />
+            Live request
+          </p>
+          <p className="hero-dispatch-unit">Unit M-24 · Ambulance assigned</p>
+          <p className="hero-dispatch-eta">ETA 08 min</p>
+          <span className="hero-dispatch-stem" />
+        </div>
       </section>
     </div>
   );

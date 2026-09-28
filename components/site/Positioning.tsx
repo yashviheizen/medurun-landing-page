@@ -28,7 +28,10 @@ import { networkFlow, positioning } from "@/data/site";
  */
 export function Positioning() {
   return (
-    <section className="relative border-b border-paper-line bg-paper pb-10 pt-14 sm:pb-12 sm:pt-16 lg:pb-14 lg:pt-20">
+    <section
+      id="positioning"
+      className="relative border-b border-paper-line bg-paper pb-10 pt-14 sm:pb-12 sm:pt-16 lg:pb-14 lg:pt-20"
+    >
       <SignalRail tone="paper" />
 
       {/* The hero's dispatch route, arriving. It picks up at the same offset in

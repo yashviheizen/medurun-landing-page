@@ -187,6 +187,12 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
         >
           <span className="flow-rail absolute inset-x-0 top-0 block border-t border-dashed border-navy/45" />
 
+          {/* The established stretch, laid over the dashed base and scaled to the
+              same draw. See `.flow-live`: it is what makes the route read as being
+              drawn rather than uncovered, and it is the only thing on the rail that
+              is brighter or thicker than the base line. */}
+          <span aria-hidden="true" className="flow-live" />
+
           {/* The travelling signal. The moving wrapper spans the rail exactly, so a
               100% translate lands the dot on the last node — and that overshoot has
               to be clipped, or the wrapper's far edge widens the page by most of the
@@ -300,12 +306,12 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
                   <>
                     <span
                       aria-hidden="true"
-                      className="flow-node absolute h-4 w-4 rounded-full border border-red/45 bg-paper"
+                      className="flow-node flow-dot absolute h-4 w-4 rounded-full border border-red/45 bg-paper"
                     />
                     <span className="flow-node relative block h-[9px] w-[9px] rounded-full bg-red" />
                   </>
                 ) : (
-                  <span className="flow-node relative block h-2 w-2 rounded-full border border-navy/70 bg-paper" />
+                  <span className="flow-node flow-dot relative block h-2 w-2 rounded-full border border-navy/70 bg-paper" />
                 )}
               </span>
 

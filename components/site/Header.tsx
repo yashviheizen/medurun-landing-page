@@ -6,42 +6,32 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { company, nav } from "@/data/site";
 import { asset } from "@/lib/asset";
+import { onScroll } from "@/lib/motion";
+import { passedIndex, readingLine } from "@/lib/stations";
 import { cn } from "@/lib/cn";
 
 /**
  * The desktop navigation carries a red tick under the section currently being read,
  * so the nav doubles as a position readout on a single-page site.
  *
- * Which section that is comes off one horizontal reading line, and an
- * IntersectionObserver watching the nav sections cross it. The line sits at 38% of
- * the viewport but never closer to the top than the sticky header plus a little air,
- * so on a short viewport it still lands on content the reader can actually see
- * rather than under the header — and the observer's root margin collapses the root
- * to that single line, which is why exactly one contiguous section can be on it.
+ * Which section that is comes off one horizontal reading line. The line itself, and
+ * the rule for reading a section off it, live in `lib/stations` — the journey tracker
+ * in the left gutter answers the same question and the two must never disagree.
  *
- * The observer is the trigger, not the answer: every crossing re-reads the live
- * section boundaries and takes the last section whose top has passed the line. That
- * distinction matters because two bands — the status strip and the hero — are not in
- * the nav at all, and an answer taken from `isIntersecting` alone would drop the
- * indicator to nothing while one of those is on the line. Taking the last section to
- * have passed keeps the previous entry lit across them, which is what a reader sees,
- * and it cannot go stale: the previous behaviour only updated once a section's top
- * reached the header itself, which left "How it works" lit well into Voices.
+ * Both read it on the shared scroll clock, in the same frame, so they cannot drift
+ * apart. An IntersectionObserver collapsed to that line was the obvious cheaper
+ * trigger and it was what this did first, but a 1px root only reports the frame a
+ * section's edge happens to land inside it: during a smooth anchor scroll the answer
+ * was taken on the entering edge, with the section's top a pixel short of the line,
+ * and nothing fired afterwards to correct it — which left "How it works" lit while
+ * the reader was sitting in Voices.
  *
- * Rebuilt on resize, because the root margin is computed from the viewport height.
+ * The answer is the last section whose top has passed the line, not whatever is
+ * intersecting it. Two bands — the status strip and the hero — are not in the nav at
+ * all, and `isIntersecting` alone would drop the indicator to nothing while one of
+ * those is on the line. Taking the last section passed keeps the previous entry lit
+ * across them, which is what a reader sees.
  */
-/**
- * Where the reading line sits in the readable area — the viewport below the sticky
- * header — as a fraction of it. Half is the honest answer: a section takes the nav
- * the moment it owns more of what the reader can see than the one before it. Taken
- * as a fraction of the whole viewport instead, the header's own height pushes the
- * line up, and on a 900px screen "Services" stayed unlit until it already covered
- * three quarters of the page.
- */
-const LINE_RATIO = 0.5;
-/** Air between the sticky header and the reading line on short viewports. */
-const LINE_MIN_GAP = 8;
-
 export function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -54,91 +44,22 @@ export function Header() {
   const close = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
-    const ids = nav.filter((item) => item.href.startsWith("#")).map((item) => item.href.slice(1));
-    let frame = 0;
+    const ids = nav
+      .filter((item) => item.href.startsWith("#"))
+      .map((item) => item.href.slice(1));
 
-    const onScroll = () => {
-      if (!frame) {
-        frame = requestAnimationFrame(() => {
-          frame = 0;
-          setScrolled(window.scrollY > 8);
-        });
-      }
+    const read = () => {
+      setScrolled(window.scrollY > 8);
+      const passed = passedIndex(
+        ids,
+        readingLine(headerRef.current?.getBoundingClientRect().height),
+      );
+      setCurrent(passed < 0 ? "" : ids[passed]);
     };
 
-    setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    if (typeof IntersectionObserver === "undefined") {
-      return () => {
-        if (frame) cancelAnimationFrame(frame);
-        window.removeEventListener("scroll", onScroll);
-      };
-    }
-
-    const viewport = () => window.innerHeight || document.documentElement.clientHeight || 1;
-
-    /** Where the reading line sits, in pixels from the top of the viewport. */
-    const readingLine = () => {
-      const view = viewport();
-      const header = Math.round(headerRef.current?.getBoundingClientRect().height ?? 72);
-      const floor = header + LINE_MIN_GAP;
-      const line = Math.round(header + (view - header) * LINE_RATIO);
-      return Math.min(Math.max(line, floor), Math.max(view - 2, 1));
-    };
-
-    /**
-     * The last nav section whose top edge has passed the line. With contiguous
-     * bands that is the section on the line; where the line is over a band that is
-     * not in the nav, it is the entry the reader last passed, which is the honest
-     * answer. Empty means the hero is still in front of everything.
-     */
-    const resolve = () => {
-      const line = readingLine();
-      let active = "";
-      for (const id of ids) {
-        const node = document.getElementById(id);
-        if (node && node.getBoundingClientRect().top <= line) active = id;
-      }
-      setCurrent(active);
-    };
-
-    let observer: IntersectionObserver | null = null;
-
-    const build = () => {
-      observer?.disconnect();
-      const view = viewport();
-      const line = readingLine();
-      observer = new IntersectionObserver(resolve, {
-        // Collapse the root to the reading line itself, so a section crossing it is
-        // the only thing that can change the answer.
-        rootMargin: `${-line}px 0px ${-Math.max(view - line - 1, 0)}px 0px`,
-        threshold: 0,
-      });
-
-      for (const id of ids) {
-        const node = document.getElementById(id);
-        if (node) observer.observe(node);
-      }
-    };
-
-    let rebuild = 0;
-
-    const onResize = () => {
-      window.clearTimeout(rebuild);
-      rebuild = window.setTimeout(build, 120);
-    };
-
-    build();
-    window.addEventListener("resize", onResize);
-
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.clearTimeout(rebuild);
-      observer?.disconnect();
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-    };
+    // Fires once immediately, so a reader landing on an anchor sees the right entry
+    // lit on the first paint rather than on the first scroll.
+    return onScroll(read);
   }, []);
 
   // While the sheet is open: lock the page, trap Escape, and keep focus inside it.
@@ -158,7 +79,8 @@ export function Header() {
 
       if (event.key !== "Tab") return;
 
-      const focusables = panelRef.current?.querySelectorAll<HTMLElement>("a[href], button");
+      const focusables =
+        panelRef.current?.querySelectorAll<HTMLElement>("a[href], button");
       if (!focusables || focusables.length === 0) return;
 
       const first = focusables[0];
@@ -185,7 +107,9 @@ export function Header() {
       ref={headerRef}
       className={cn(
         "sticky top-0 z-50 border-b transition-colors duration-300",
-        scrolled || open ? "border-line bg-white/90 backdrop-blur-md" : "border-transparent bg-white",
+        scrolled || open
+          ? "border-line bg-white/90 backdrop-blur-md"
+          : "border-transparent bg-white",
       )}
     >
       <a
@@ -199,7 +123,11 @@ export function Header() {
           the one place it is written, because the hero subtracts it from the
           viewport to size its own frame. */}
       <div className="shell flex h-[var(--header-h)] items-center justify-between gap-4">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5" onClick={close}>
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2.5"
+          onClick={close}
+        >
           <Image
             src={asset("/brand/medurun-logo.png")}
             alt={`${company.name} logo`}
@@ -260,7 +188,11 @@ export function Header() {
             aria-label={open ? "Close menu" : "Open menu"}
             className="inline-flex h-10 w-10 items-center justify-center border border-line text-navy-deep transition-colors duration-300 hover:border-navy-deep lg:hidden"
           >
-            {open ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
+            {open ? (
+              <X size={18} aria-hidden="true" />
+            ) : (
+              <Menu size={18} aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
@@ -278,7 +210,9 @@ export function Header() {
                 <Link
                   href={item.href}
                   onClick={close}
-                  aria-current={item.href === `#${current}` ? "location" : undefined}
+                  aria-current={
+                    item.href === `#${current}` ? "location" : undefined
+                  }
                   className="flex items-center gap-3 border-b border-line/70 py-3.5 text-[0.95rem] text-ink"
                 >
                   {/* The same readout in the sheet: a red tick beside the section

@@ -1,5 +1,6 @@
 import { Header } from "@/components/site/Header";
 import { Hero } from "@/components/site/Hero";
+import { JourneyTracker } from "@/components/site/JourneyTracker";
 import { Positioning } from "@/components/site/Positioning";
 import { About } from "@/components/site/About";
 import { Services } from "@/components/site/Services";
@@ -16,13 +17,25 @@ export default function HomePage() {
   return (
     <>
       <Header />
+      <JourneyTracker />
       <main id="main">
         <Hero />
         <Positioning />
         <About />
         <Services />
-        <PartnerSection id="drivers" index="04" content={driverPartner} imageSide="left" />
-        <PartnerSection id="agencies" index="05" content={agencyPartner} imageSide="right" tone="dark" />
+        <PartnerSection
+          id="drivers"
+          index="04"
+          content={driverPartner}
+          imageSide="left"
+        />
+        <PartnerSection
+          id="agencies"
+          index="05"
+          content={agencyPartner}
+          imageSide="right"
+          tone="dark"
+        />
         <WhyMedurun />
         <HowItWorks />
         <CredibilityStrip />
