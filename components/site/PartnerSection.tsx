@@ -8,6 +8,14 @@ import { cn } from "@/lib/cn";
 /** Stagger between the three operational metadata labels. */
 const META_STEP = 60;
 
+/**
+ * The beat between the lines of a partner column opening. Shorter than the 90ms
+ * `SectionHeading` uses because there are more lines here — label, headline,
+ * sentence, conditions, points, action — and the whole opening still has to land
+ * inside one transition rather than turn into a queue.
+ */
+const LINE_STEP = 70;
+
 export type PartnerContent = {
   eyebrow: string;
   heading: string;
@@ -38,9 +46,10 @@ export type PartnerContent = {
  * Both bands carry that action. They are a facing spread, and an action on only one
  * page does not read as emphasis, it reads as the other page being unfinished.
  *
- * On entry each photograph is wiped in from its own outer edge with a clip mask, and
- * the three metadata labels arrive 60ms apart, left to right, like a line being
- * typed. The body copy is not animated line by line: it is the thing being read.
+ * On entry each photograph is wiped in from its own outer edge with a clip mask, the
+ * column's lines arrive in reading order 70ms apart, and the three metadata labels
+ * type out 60ms apart behind the sentence they belong to. The body copy is not
+ * animated line by line: it is the thing being read.
  */
 export function PartnerSection({
   id,
@@ -77,15 +86,21 @@ export function PartnerSection({
       <SignalRail tone={dark ? "dark" : "light"} />
 
       <div className="shell relative grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-x-12 lg:gap-y-0">
-        <Reveal className={cn("lg:col-span-5", left ? "lg:col-start-8" : "lg:col-start-1")}>
-          <p className={cn("op-label", !left && "op-label--rail")}>
+        {/* `items`: the column's own lines carry the entrance, so the label, the
+            headline, the sentence and the action arrive in that order instead of
+            the whole page of copy appearing at once. The host is the existing
+            column — wrapping each line would put new margin-collapse boundaries
+            through spacing that is tuned to the pixel. */}
+        <Reveal items className={cn("lg:col-span-5", left ? "lg:col-start-8" : "lg:col-start-1")}>
+          <p className={cn("stagger-up op-label", !left && "op-label--rail")}>
             {index ? <span className="tabular-nums text-red">{index}</span> : null}
             <span>{content.eyebrow}</span>
           </p>
 
           <h2
+            style={{ transitionDelay: `${LINE_STEP}ms` }}
             className={cn(
-              "mt-6 text-[2rem] leading-[1.08] sm:text-[2.5rem] lg:text-[2.85rem]",
+              "stagger-up mt-6 text-[2rem] leading-[1.08] sm:text-[2.5rem] lg:text-[2.85rem]",
               dark ? "text-white" : "text-ink",
             )}
           >
@@ -93,8 +108,9 @@ export function PartnerSection({
           </h2>
 
           <p
+            style={{ transitionDelay: `${LINE_STEP * 2}ms` }}
             className={cn(
-              "mt-5 max-w-lg text-base leading-relaxed sm:text-lg",
+              "stagger-up mt-5 max-w-lg text-base leading-relaxed sm:text-lg",
               dark ? "text-white/70" : "text-muted",
             )}
           >
@@ -110,7 +126,7 @@ export function PartnerSection({
             {content.meta.map((item, position) => (
               <li
                 key={item}
-                style={{ transitionDelay: `${position * META_STEP}ms` }}
+                style={{ transitionDelay: `${LINE_STEP * 2 + position * META_STEP}ms` }}
                 className="op-stagger flex items-center gap-3"
               >
                 {position > 0 ? (
@@ -121,7 +137,7 @@ export function PartnerSection({
             ))}
           </ul>
 
-          <ul className="mt-8">
+          <ul className="stagger-up mt-8" style={{ transitionDelay: `${LINE_STEP * 3}ms` }}>
             {content.points.map((point) => (
               <li
                 key={point}
@@ -143,7 +159,7 @@ export function PartnerSection({
             ))}
           </ul>
 
-          <div className="mt-9">
+          <div className="stagger-up mt-9" style={{ transitionDelay: `${LINE_STEP * 4}ms` }}>
             <Button href={`mailto:${content.contact.address}`} variant={dark ? "ghost" : "primary"}>
               {content.cta}
               <ArrowUpRight size={15} strokeWidth={2} aria-hidden="true" className="shrink-0" />
