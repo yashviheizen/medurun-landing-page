@@ -287,6 +287,55 @@
     display: flex;
   }
 
+  /* The red hairline along the card being read. It belongs to the fanned deck —
+     it is how a card says it has come straight — so out of the deck there is
+     nothing for it to report and it is not drawn at all. The rule beside the
+     role already carries the same signal at the size of a caption. */
+  .vx-accent {
+    display: none;
+  }
+
+  /* ── Voices: the closing panel ────────────────────────────────────────────
+     Out of the deck this is the band's closing statement and nothing more: a
+     navy block under the cards, in the contact band's own navy so the two read
+     as one ending rather than two.
+
+     In the deck it is the same element, opened out of the fourth card and driven
+     to fill the screen — the pinned block further down does that, and only that.
+     It is a plain block here on purpose: the sentence on it is content, so a
+     reader on a phone, with reduced motion, or with scripting off has to have
+     it. A line of copy that only exists inside an effect is a line of copy that
+     is sometimes not on the page. */
+  .vx-final {
+    position: relative;
+    margin-top: 2.75rem;
+    overflow: hidden;
+    border-radius: 7px;
+    /* navy.deep — the contact band's own ground. */
+    background-color: #101b3c;
+    padding: 2.25rem 1.5rem 2.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .vx-final {
+      padding: 3rem 2.5rem;
+    }
+  }
+
+  /* The one red on the panel: the signal line every section heading hangs off,
+     run the full width of the thing it is closing. */
+  .vx-final-rule {
+    position: absolute;
+    inset: 0 auto auto 0;
+    height: 2px;
+    width: 100%;
+    background-color: #ed1c24;
+  }
+
+  .vx-final-inner {
+    max-width: 54rem;
+  }
+
   /* Hero headline mask. Each line is clipped by its own wrapper and the inner
      block rises out of it, so the words are at full opacity the whole way up —
      nothing is left faint on screen while the page loads. The padding gives the
@@ -885,63 +934,43 @@
     }
   }
 
-  /* Service explorer: one panel visible at a time, stacked in a single grid cell
-     so the column is as tall as the largest panel and swapping never reflows.
-     Scoped to `.js` for the same reason the slider is — with no JS the tab list
-     cannot do anything, so all five panels must render as a plain readable list
-     rather than four of five silently disappearing. */
-  .js .svc-panel {
-    grid-column: 1;
-    grid-row: 1;
-    opacity: 0;
-    /* Also takes the inactive panels out of the accessibility tree. */
-    visibility: hidden;
-    pointer-events: none;
-    /* At rest, below: a panel waiting to be asked for is parked 8px down, which is
-       where its entrance starts from. */
-    transform: translateY(8px);
-    /* No transition on the resting state itself. Each of the two moving states
-       carries its own, which is what lets a panel that has finished leaving snap
-       back to the waiting position without animating a second time on the way. */
-    transition: none;
+  /* ---------------------------------------------------------------------------
+     Service gallery, base layer.
+
+     Two presentations of the same five services, and this is the one every frame
+     gets by default: a native scroll-snap row of cards, each carrying its own
+     number, title, description and photograph, in document order. It needs no
+     JavaScript, no pointer handler and no pinning, which is exactly why it is the
+     default rather than the exception — phones, tablets, `prefers-reduced-motion`
+     and a page with scripting off all land here without any of them being a special
+     case.
+
+     The split-screen gallery is the other one, and it does not exist until a frame
+     is both wide enough to pin and being read by somebody who has not asked for
+     less motion. `ServiceExplorer` mounts it on the same media query this stylesheet
+     switches on, so the DOM and the rules cannot disagree and the gallery's five
+     large plates and five thumbnails are only ever fetched for the layout that
+     shows them.
+     --------------------------------------------------------------------------- */
+  .svc-gallery {
+    display: none;
   }
 
-  /* 280ms both ways: long enough to read as a hand-over rather than a cut, short
-     enough that running the tablist with the arrow keys never feels like the panel
-     is lagging behind the selection. `visibility` is in the list rather than
-     switched outright — going from visible it holds until the very end of the
-     transition, so the panel being left is still painted while it fades. */
-  .js .svc-panel[data-active="true"],
-  .js .svc-panel[data-leaving="true"] {
-    transition:
-      opacity 0.28s ease-out,
-      transform 0.28s ease-out,
-      visibility 0.28s;
+  .svc-cards {
+    display: block;
+    margin-top: 2.5rem;
   }
 
-  /* Incoming: up from 8px, into place. */
-  .js .svc-panel[data-active="true"] {
-    opacity: 1;
-    visibility: visible;
-    transform: none;
-    pointer-events: auto;
+  /* The gallery's ground, and nothing at all anywhere else. */
+  .svc-ground {
+    display: none;
   }
 
-  /* Outgoing: on up and out, 8px past where it sat. The pair reads as one movement
-     in one direction — the service being left continues out of the frame while the
-     one arriving comes up behind it — rather than as a picture falling back into
-     the hole it came from. */
-  .js .svc-panel[data-leaving="true"] {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-
-  /* Rapid selection — a pointer swept down the list, or a held arrow key. Only one
-     panel is ever leaving, but while selections are arriving faster than a
-     transition can finish even that one is cut rather than faded: at most one panel
-     is animating, and it is always the one being asked for. */
-  .js .svc-stack[data-quick="true"] .svc-panel:not([data-active="true"]) {
-    transition: none;
+  /* The progress line down the preview track. It only exists while the scroll is
+     driving the gallery, but the fill is given a height here so that if it is ever
+     painted before the first frame writes `--svc-p` it is empty rather than full. */
+  .svc-fill {
+    height: 0;
   }
 
   /* Mobile service cards scroll natively, so swiping works with no JS at all.
@@ -1425,10 +1454,14 @@
     stroke-linejoin: round;
 
     /* The strokes are `non-scaling-stroke`, so this is a screen weight rather than a
-       viewBox one and it holds while the drawing is shrunk to a tenth of its size.
-       It still loses a little on the way down: 1.5px of line on a 310px vehicle is a
-       drawn edge, and the same 1.5px on the 37px glyph it becomes would be a blob. */
-    stroke-width: calc(1.5 - 0.7 * var(--amb-go));
+       viewBox one and it holds while the drawing is shrunk to a fifth of its size. It
+       gives a little back on the way down — 1.6px of line on a 310px vehicle is a drawn
+       edge, and the same weight on the glyph it becomes would start to close the gaps
+       in it — but only a little: 1.25px is a line you can still see from a reading
+       distance, where the 0.8px this used to arrive at was a grey suggestion of one.
+       The glyph is also two thirds larger than it was, so there is more room inside it
+       for the weight to sit. */
+    stroke-width: calc(1.6 - 0.35 * var(--amb-go));
 
     /* One dash as long as the whole path, pushed off the end of it and pulled back on
        as the window opens. `--amb-lead` is the path's own offset into the window, so
@@ -1595,14 +1628,27 @@
          still flying into it. */
       background-color: transparent;
 
-      /* The photograph going, and the lights going after it.
-
-         Two clocks rather than one, and the fourteen hundredths between them is the
-         beat the brief asks for: the bodywork has already faded out from under the
-         headlamps and the beacons while those are still burning, so for a fifth of a
-         screen what is on the frame is a line drawing, two warm discs and a red and a
-         blue one. Then they go too, and the drawing is alone on the paper. */
+      /* The ground going: midnight navy to nothing, so what is behind the hero shows
+         through it. The lights outlast it (`--amb-out` below) — the bodywork has
+         already gone from under the headlamps and the beacons while those are still
+         burning, so for a fifth of a screen what is on the frame is a line drawing,
+         two warm discs and a red and a blue one. Then they go too, and the drawing is
+         alone on the paper. */
       --amb-fade: clamp(0, calc((var(--hero-exit) - 0.45) / 0.25), 1);
+
+      /* The photograph's own departure, three hundredths ahead of the ground's and
+         over a shorter window, so the picture is gone by 0.62 while the navy runs on
+         to 0.70.
+
+         Two clocks rather than the one they used to share, because sharing it was
+         what made the middle of the transition grey: a half-faded photograph and a
+         half-faded navy ground both sitting over the paper behind them average out
+         to a flat wash across the whole frame, and for a fifth of a screen that wash
+         was the only thing on it. Led by this, the picture thins out while the ground
+         is still dark enough to carry it, and the eight hundredths after it has gone
+         are a navy field turning to paper with a line drawing standing on it —
+         a change of ground rather than an overlay laid across one. */
+      --amb-pic: clamp(0, calc((var(--hero-exit) - 0.42) / 0.2), 1);
       --amb-out: clamp(0, calc((var(--hero-exit) - 0.58) / 0.14), 1);
 
       /* The lamps come up through the tracing rather than with the wipe. They are at
@@ -1613,15 +1659,20 @@
 
       /* The spent canvas taken out of the page.
 
-         Nothing is visible in it after 0.72 and the drawing has faded by 0.88, but an
+         Nothing is visible in it after 0.72 and the drawing has faded by 0.90, but an
          invisible box with a z-index above Positioning is still hit-tested, and this
          one covers the whole pinned screen — so the section under it could not be
          selected or reached. `clip-path` is the one way to take a box out of
          hit-testing from a scroll-driven custom property. It closes upward from the
-         bottom edge over six hundredths, after the last thing painted in it has gone,
-         so there is nothing to be seen being clipped. */
+         bottom edge over the five hundredths after the last thing painted in it has
+         gone, so there is nothing to be seen being clipped.
+
+         0.90 rather than 0.86, and the four hundredths matter: the drawing now comes
+         to rest *on* its node and is held there to be seen before it hands over, and
+         a clip closing up from the bottom of the pinned screen would have cut it off
+         at the knees while it stood there. */
       clip-path: inset(
-        0 0 calc(100% * clamp(0, calc((var(--hero-exit) - 0.86) / 0.06), 1)) 0
+        0 0 calc(100% * clamp(0, calc((var(--hero-exit) - 0.9) / 0.05), 1)) 0
       );
     }
 
@@ -1651,14 +1702,18 @@
        photography on its way to being a drawing, which is the read the brief asks for:
        a photograph becoming technical rather than a photograph being switched off. */
     .hero-track .hero-stage img {
-      filter: opacity(calc(1 - var(--amb-fade)))
-        saturate(calc(1 - 0.92 * var(--amb-fade)));
+      filter: opacity(calc(1 - var(--amb-pic)))
+        saturate(calc(1 - 0.45 * var(--amb-pic)));
     }
 
     /* The navy scrim over the picture goes with the picture. Left behind, it would be
        a dark gradient standing on the paper. */
+    /* The navy scrim goes with the picture it is over, not with the ground behind it.
+       Left on the ground's clock it outlived the photograph by eight hundredths, and a
+       navy gradient standing on its own over paper is exactly the grey sheet this pass
+       is removing. */
     .hero-track .hero-veil {
-      opacity: calc(1 - var(--amb-fade));
+      opacity: calc(1 - var(--amb-pic));
     }
 
     /* `filter` rather than `opacity` and `scale`, which `beacon-pulse` owns outright —
@@ -1805,13 +1860,30 @@
        become the marker, it has to reach it. */
     .hero-outline {
       --amb-draw: clamp(0, calc((var(--hero-exit) - 0.25) / 0.25), 1);
-      --amb-ink: clamp(0, calc((var(--hero-exit) - 0.5) / 0.22), 1);
-      --amb-go: clamp(0, calc((var(--hero-exit) - 0.6) / 0.22), 1);
+      --amb-ink: clamp(0, calc((var(--hero-exit) - 0.48) / 0.2), 1);
+      --amb-go: clamp(0, calc((var(--hero-exit) - 0.58) / 0.18), 1);
       --amb-ease: calc(var(--amb-go) * var(--amb-go) * (3 - 2 * var(--amb-go)));
       translate: calc(var(--amb-ease) * var(--amb-dx, 0px))
         calc(var(--amb-ease) * var(--amb-dy, 0px));
-      scale: calc(1 - 0.88 * var(--amb-ease));
-      opacity: clamp(0, calc((0.88 - var(--hero-exit)) / 0.08), 1);
+
+      /* 0.19, not 0.12. The box is a little over 300px across on a 1440 frame, so an
+         eighth of it was a 40×30 mark — smaller than the label under the node it was
+         landing on, and at that size a twenty-three path drawing is a smudge rather
+         than an ambulance. At 0.19 the glyph is about 63×48: the wheels, the light bar
+         and the red cross on the nose are all still legible, and it is still small
+         enough to sit inside the node's own column without touching either
+         neighbour. */
+      scale: calc(1 - 0.81 * var(--amb-ease));
+
+      /* Landed at 0.76, held to 0.86, gone by 0.92.
+
+         The hold is the point of this pass. It used to begin fading at 0.80 while the
+         flight was still running to 0.82, so the drawing was never once on screen at
+         rest on its node — it arrived already half gone, which is what read as it
+         floating above the network rather than reaching it. Ten hundredths of the
+         track, a fifth of a screen of scroll, is now spent with the ambulance standing
+         still on AMBULANCE ASSIGNED before it hands the node over. */
+      opacity: clamp(0, calc((0.92 - var(--hero-exit)) / 0.06), 1);
     }
 
     /* White on the photograph, navy on the paper, and the same line throughout.
@@ -1825,18 +1897,22 @@
     /* And the thread out of the landed drawing into its node, drawn last.
 
        It stands in the gap the schematic's top margin opens above it, so it crosses no
-       type, and its length is the same 40px `HeroMotion` lands the drawing at: 2rem of
-       that gap plus the 8px from the top of the diagram's box down to the centre of its
-       first row, so the line ends *on* AMBULANCE ASSIGNED rather than at the edge of the
-       diagram containing it. It darkens downward, so the route appears to condense out
-       of the paper onto the node. */
+       type, and it runs 2rem of that gap plus the 8px from the top of the diagram's box
+       down to the centre of its first row — so the line ends *on* AMBULANCE ASSIGNED
+       rather than at the edge of the diagram containing it. It darkens downward, so the
+       route appears to condense out of the paper onto the node.
+
+       Drawn from 0.64 to 0.76, which is the flight itself rather than the beat after
+       it: the drawing now comes to rest centred on the node, so the thread is the line
+       it is coming down, finished at the moment it arrives, with its top third left
+       showing above the landed glyph as the route it took. */
     .pos-drop {
       display: block;
       width: 1px;
       top: -2rem;
       height: calc(2rem + 8px);
       transform-origin: top center;
-      transform: scaleY(clamp(0, calc((var(--hero-exit) - 0.8) / 0.1), 1));
+      transform: scaleY(clamp(0, calc((var(--hero-exit) - 0.64) / 0.12), 1));
       background-image: linear-gradient(
         to bottom,
         rgba(237, 28, 36, 0),
@@ -1924,12 +2000,14 @@
 
     /* Positioning arriving under the drawing.
 
-       0.66 is where the ground above is five sixths of the way from navy to paper, so
-       the label starts coming up on a frame that is already mostly this section's own
-       colour rather than on a navy one — the brief's condition, expressed as the
-       number the ground is actually at. It is complete at 0.80, which is two
-       hundredths before the ambulance lands on the node inside it: what the drawing
-       arrives on is a finished band, not one still fading up under it.
+       0.56 is where the photograph above has just finished leaving, so the label starts
+       coming up on the first frame that is a ground rather than a picture — and it is
+       at full strength by 0.70, the exact hundredth the navy finishes turning to paper.
+       Ten hundredths earlier than it was at both ends, which is what the brief asks
+       for: the statement is readable while the transition above it is still finishing
+       rather than only after it has, and what the drawing lands on six hundredths
+       later is a band that has been complete for a while, not one still fading up
+       under it.
 
        The statement has its own slightly later window below, so the label leads it —
        the reader is given the section's number and name, then its sentence, in that
@@ -1940,7 +2018,7 @@
        — but an opacity driven by a property nobody is writing would leave this band
        blank, and the whole argument of the page is in it. */
     .js .pos-track .pos-stage {
-      --pos-in: clamp(0, calc((var(--hero-exit) - 0.66) / 0.14), 1);
+      --pos-in: clamp(0, calc((var(--hero-exit) - 0.56) / 0.14), 1);
       opacity: var(--pos-in);
       translate: 0 calc((1 - var(--pos-in)) * 18px);
     }
@@ -1953,7 +2031,7 @@
        its own opacity and transform for the unpinned page and a second author of
        either would simply overwrite the first. */
     .js .pos-track .pos-line {
-      --pos-line-in: clamp(0, calc((var(--hero-exit) - 0.74) / 0.14), 1);
+      --pos-line-in: clamp(0, calc((var(--hero-exit) - 0.62) / 0.14), 1);
       opacity: var(--pos-line-in);
       translate: 0 calc((1 - var(--pos-line-in)) * 14px);
     }
@@ -2244,6 +2322,751 @@
       --why-step: 5.25rem;
     }
   }
+
+  /* ---------------------------------------------------------------------------
+     4. What we provide: five services as one split-screen gallery.
+
+     380vh of track under a one-screen stage is 2.8 screens of travel, spent like
+     this: a fifteenth of it bringing the gallery on, two thirds of it walking the
+     five services, and the last quarter opening the gallery back out into the
+     page's ordinary light layout. The shares themselves live in the component
+     (`LEAD`, `WALK_TO`, `OPEN_TO`) rather than here, because they are fractions of
+     a travel these two rules define — there is one height in this block and
+     nothing on either side of the boundary needs to know a duration.
+
+     The composition is a grid of two rows on the stage — the heading, then
+     everything else — and the gallery inside that second row is a grid of two
+     columns: the photograph at a shade under 60% and the preview track at the
+     rest. Both inner columns are `minmax(0, …)` and the boxes down the chain say
+     `min-height: 0`, because a sticky stage is exactly one screen tall and a
+     column that will not shrink is a column whose last line is under the fold.
+
+     Two things about the ground are worth saying out loud. It is a layer rather
+     than the section's own background, because it has to cross from paper to navy
+     and back inside one band; and it is stretched past the content column by two
+     custom properties the component measures, because a full-bleed band that stops
+     at the shell's gutters is a rectangle drawn on a page rather than a change of
+     territory.
+
+     Everything below is written twice over in a sense: once as geometry, and once
+     as a function of `--svc-open`. The gaps between the previews, their corner
+     radius, their thumbnails' width, the mask over their window, the colour of
+     every rule and every word — all interpolated on that one number, which is why
+     the dark gallery and the light list are the same five rows rather than two
+     layouts crossfading. Nothing transitions: `--svc-open` *is* the scroll
+     position, so a transition could only lag it going down and wobble coming back.
+
+     Below `lg`, at every width under `prefers-reduced-motion`, and with scripting
+     off, none of this exists. The section is its own height, the heading sits above
+     a natively swipeable row of five cards, and the component does not even mount
+     the gallery — it watches this same query. */
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .js .svc-track {
+      height: 380vh;
+    }
+
+    .js .svc-stage {
+      position: sticky;
+      top: var(--header-h);
+      min-height: calc(100vh - var(--header-h));
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      padding-block: clamp(1.5rem, 4.5vh, 3rem);
+      isolation: isolate;
+
+      /* The gallery's own measurements, in one place. A preview row is sized off
+         the viewport's height rather than its width: what it has to fit inside is
+         a screen, and five of them plus a paragraph is the whole right column. */
+      --svc-row-h: clamp(3.9rem, 8.4vh, 5.15rem);
+      --svc-thumb-w: clamp(4rem, 5.6vw, 5.25rem);
+      --svc-gap: 0.7rem;
+    }
+
+    .js .svc-cards {
+      display: none;
+    }
+
+    .js .svc-ground {
+      display: block;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: var(--svc-bleed-l, 0px);
+      right: var(--svc-bleed-r, 0px);
+      z-index: 0;
+      background-color: #0a1129;
+      opacity: var(--svc-dark, 0);
+      transition: none;
+      will-change: opacity;
+    }
+
+    .js .svc-head {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* The heading crosses between the two grounds along with everything else,
+       rather than switching at some point in the middle of the fade. The red index
+       inside the label carries its own colour and is left alone: it is the signal
+       line, and the signal line is the same red on both. */
+    .js .svc-stage .svc-head h2 {
+      color: var(--svc-fg, #0b0b0b);
+    }
+
+    .js .svc-stage .svc-head .op-label {
+      color: var(--svc-dim, #5b6172);
+    }
+
+    .js .svc-gallery {
+      display: grid;
+      position: relative;
+      z-index: 1;
+      grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr);
+      gap: clamp(1.75rem, 3.2vw, 3rem);
+      align-items: stretch;
+      min-height: 0;
+      margin-top: clamp(1.25rem, 3.6vh, 2.5rem);
+      opacity: var(--svc-enter, 0);
+      transform: translate3d(0, calc((1 - var(--svc-enter, 0)) * 34px), 0);
+      transition: none;
+      will-change: opacity, transform;
+    }
+
+    /* ---- Left: one photograph, five frames deep ---------------------------- */
+
+    .js .svc-plate {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      border-radius: 7px;
+      background-color: #eef1f9;
+    }
+
+    /* The frame being asked for is uncovered downward over the one before it, and
+       the stack is painted in order, so what is on top is what is seen and there is
+       always a finished picture underneath it. The first frame is never clipped: it
+       is the floor the other four are drawn on, which is why no point in the whole
+       sequence can be a frame with no photograph on it. */
+    .js .svc-plate .svc-shot {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      clip-path: inset(0 0 100% 0);
+      opacity: 0;
+      transition: none;
+      will-change: clip-path, opacity;
+    }
+
+    /* The 1.04 → 1 settle rides its own element. `clip-path` resolves in the box's
+       own coordinates, so a transform on the same box would drag the mask's edge
+       along with the picture — the wipe would zoom instead of the photograph. */
+    .js .svc-plate .svc-zoom {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 50%;
+      transition: none;
+      will-change: transform;
+    }
+
+    /* Binds the photograph to the navy while there is navy to bind it to, and is
+       gone by the time the ground is paper again. */
+    .js .svc-plate .svc-veil {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      background-image: linear-gradient(
+        200deg,
+        rgba(10, 17, 41, 0) 42%,
+        rgba(10, 17, 41, 0.4) 100%
+      );
+      opacity: var(--svc-dark, 0);
+      transition: none;
+    }
+
+    /* ---- Right: the preview track, and the service it is on ---------------- */
+
+    .js .svc-side {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: clamp(0.9rem, 2.2vh, 1.6rem);
+      min-height: 0;
+    }
+
+    /* The window the track moves behind.
+
+       It is deliberately shorter than the list while the gallery is running — four
+       rows and a bit — and it has to be. The active preview is held at the window's
+       centre, so half of whatever the window is taller than one row is empty above
+       the first service and below the last. At the full height of the column that is
+       two and a half rows of nothing at each end of the walk; at four it is a row
+       and a half, which reads as the track running past the frame rather than as a
+       hole in it, and still shows the service either side of the open one.
+
+       At the close it grows back to the whole column, because the five rows have to
+       stand in it as a list. Both edges are feathered while it is a window and flat
+       once it is a list — a list whose first and last rows fade out looks broken. */
+    .js .svc-win {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      align-self: center;
+      --svc-walk-h: calc(var(--svc-row-h) * 4.2 + var(--svc-gap) * 3.2);
+      /* An explicit height rather than a cap: the track inside is positioned, so
+         the window has no in-flow content to be measured from and would collapse
+         the moment it stopped being stretched to its row. */
+      height: calc(
+        var(--svc-walk-h) + (100% - var(--svc-walk-h)) * var(--svc-open, 0)
+      );
+      --svc-feather: calc(13% * (1 - var(--svc-open, 0)));
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--svc-feather),
+        #000 calc(100% - var(--svc-feather)),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--svc-feather),
+        #000 calc(100% - var(--svc-feather)),
+        transparent 100%
+      );
+    }
+
+    /* How far through the five the walk has got, as a height rather than a
+       transition. It is the scroll position itself, so it follows the finger
+       exactly and retraces on the way back up. It belongs to the gallery and leaves
+       with it: the light list that replaces it has the red edge on its open row to
+       say the same thing. */
+    .js .svc-meter {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 1px;
+      z-index: 1;
+      background-color: var(--svc-line, #e4e6ed);
+      /* Gone by the first third of the close rather than at the end of it: past
+         that point the list is forming and a rule running the height of the window
+         is a line with nothing on either side of it. */
+      opacity: clamp(0, calc(1 - var(--svc-open, 0) * 3), 1);
+      transition: none;
+    }
+
+    .js .svc-fill {
+      display: block;
+      width: 100%;
+      border-radius: 9999px;
+      background-color: #ed1c24;
+      height: calc(100% * var(--svc-p, 0));
+    }
+
+    .js .svc-rail {
+      position: absolute;
+      inset: 0 0 auto 0;
+      display: block;
+      transition: none;
+      will-change: transform;
+    }
+
+    /* One preview. Five of these are the gallery's track and the light layout's
+       list, and the whole difference between the two is `--svc-open`: the gap under
+       each row closes to a shared hairline, the corner unrounds, the card's ground
+       drains away and the thumbnail folds shut. Nothing crossfades, because there
+       is only ever one of them. */
+    .js .svc-rail .svc-row {
+      position: relative;
+      display: flex;
+      width: 100%;
+      height: var(--svc-row-h);
+      align-items: center;
+      padding: 0 0.85rem 0 1.1rem;
+      text-align: left;
+      /* -1px at the far end so the rows share one rule between them instead of
+         stacking two and drawing the list in 2px hairlines. */
+      margin-bottom: calc(
+        var(--svc-gap) * (1 - var(--svc-open, 0)) - 1px * var(--svc-open, 0)
+      );
+      border: 1px solid var(--svc-line, #e4e6ed);
+      border-radius: calc(6px * (1 - var(--svc-open, 0)));
+      background-color: var(--svc-face, transparent);
+      /* Left, not centre: the previews scale against a fixed left edge, so the
+         column's own alignment survives the emphasis. */
+      transform-origin: left center;
+      transition: none;
+      will-change: transform, opacity;
+    }
+
+    .js .svc-rail .svc-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .js .svc-row .svc-edge {
+      position: absolute;
+      inset: 0 auto 0 -1px;
+      width: 2px;
+      background-color: #ed1c24;
+      opacity: var(--near, 0);
+      transition: none;
+    }
+
+    .js .svc-row .svc-thumb {
+      position: relative;
+      display: block;
+      flex: none;
+      overflow: hidden;
+      height: calc(var(--svc-row-h) - 1.5rem);
+      width: calc(var(--svc-thumb-w) * (1 - var(--svc-open, 0)));
+      margin-right: calc(0.9rem * (1 - var(--svc-open, 0)));
+      border-radius: 3px;
+      background-color: #101b3c;
+      opacity: calc(1 - var(--svc-open, 0));
+      transition: none;
+    }
+
+    .js .svc-row .svc-num {
+      margin-right: 1rem;
+      color: var(--svc-dim, #5b6172);
+      transition: none;
+    }
+
+    .js .svc-row[data-live="true"] .svc-num {
+      color: #ed1c24;
+    }
+
+    .js .svc-row .svc-name {
+      font-size: clamp(1.02rem, 1.3vw, 1.28rem);
+      color: var(--svc-fg, #0b0b0b);
+      transition: none;
+    }
+
+    .js .svc-row .svc-ico {
+      margin-left: auto;
+      display: inline-flex;
+      flex: none;
+      height: 2rem;
+      width: 2rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      color: var(--svc-dim, #5b6172);
+      transition: none;
+    }
+
+    /* One red that reads on both grounds, so the emphasis itself never has to be
+       interpolated along with everything around it. */
+    .js .svc-row[data-live="true"] .svc-ico {
+      color: #ed1c24;
+      background-color: rgba(237, 28, 36, 0.14);
+    }
+
+    /* The open service's own sentence, directly under its preview. A minimum height
+       rather than an automatic one: the five descriptions are not the same length,
+       and a column that resizes under the track would move the track. */
+    .js .svc-say {
+      position: relative;
+      min-height: clamp(6.5rem, 14vh, 8.5rem);
+    }
+
+    .js .svc-say-body {
+      max-width: 34rem;
+      font-size: 0.98rem;
+      line-height: 1.7;
+      color: var(--svc-dim, #5b6172);
+      /* The one thing in this section that is a duration rather than a position.
+         It can be: the paragraph is replaced outright when the service changes, and
+         a replacement has no scroll position to be a function of. */
+      animation: svc-say-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @keyframes svc-say-in {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 9px, 0);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .js .svc-cta {
+      margin-top: 1.15rem;
+      opacity: var(--svc-open, 0);
+      transform: translate3d(0, calc((1 - var(--svc-open, 0)) * 14px), 0);
+      transition: none;
+    }
+
+    /* A link faded to nothing is still a link. It enters the document only once the
+       closing layout has begun, and it answers a pointer only once it is actually
+       readable. */
+    .js .svc-stage[data-open="false"] .svc-cta {
+      pointer-events: none;
+    }
+  }
+
+  /* A short laptop gets a tighter gallery, for the same reason the stack above it
+     does. The stage is pinned at the header, so anything it cannot fit is cut off
+     at the bottom of the window rather than pushed below the fold — and the first
+     thing to go would be the fifth preview, which is the one the whole sequence
+     ends on.
+
+     What gives is the air, not the type: the gap under the heading, the gap between
+     the track and the paragraph, the paragraph's own floor, and the height a
+     preview keeps around its thumbnail. */
+  @media (min-width: 1024px) and (max-height: 820px) and (prefers-reduced-motion: no-preference) {
+    .js .svc-stage {
+      padding-block: 1.25rem;
+      --svc-row-h: clamp(3.4rem, 7.6vh, 4.2rem);
+      --svc-gap: 0.5rem;
+    }
+
+    .js .svc-gallery {
+      margin-top: 1.1rem;
+    }
+
+    .js .svc-side {
+      gap: 0.85rem;
+    }
+
+    .js .svc-say {
+      min-height: 6.5rem;
+    }
+
+    .js .svc-say-body {
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .js .svc-cta {
+      margin-top: 0.85rem;
+    }
+  }
+
+  /* ---------------------------------------------------------------------------
+     5. Voices across the network: four sides of one emergency, as a fanned deck.
+
+     Two presentations of the same four cards, and this block is the whole of the
+     second one. Everywhere else — phones, tablets, reduced motion, scripting off
+     — the markup below is a heading, a native horizontal scroller and a closing
+     panel, in document order, and none of the geometry here exists.
+
+     On a desktop that welcomes motion it becomes a pinned sequence. The stage is
+     a frame with four layers stacked on it, and `VoicesSlider` writes one number
+     per frame onto the stage for each of them:
+
+       .vx-head    the label and the headline      --vx-head   how far gone
+       .vx-frame   the deck the cards fan inside   (per-card, written inline)
+       .vx-rail    the counter and its line        --vx-rail   how far faded
+                                                   --vx-p      how far along
+       .vx-final   the closing panel               --vx-panel  its ground
+                                                   --vx-cta    its line
+                                                   --vx-round  its corners
+                                                   --vx-f[trbl] its rect
+
+     Nothing here is animated towards anything, and no rule in this block carries
+     a transition. Every value is a function of how far the stage has been
+     scrolled through, so running the sequence backwards is running the same
+     arithmetic in the other order — there is no state anywhere to unwind, and
+     the way up is the way down, exactly.
+
+     340vh over one screen of stage is about 248vh of travel: a quarter of it to
+     hand the screen from the headline to the deck, a little under half to walk
+     the four cards, and the rest to open the closing panel and hold it. That
+     puts a card change at roughly 36vh, near enough to the pinned service list's
+     step that crossing from one band to the other reads as one page rather than
+     two effects.
+
+     The cards' own transform and opacity are written inline by the component
+     rather than declared here. They have to be: a card also carries the row's
+     sideways entrance, whose hidden state sets a transform at a specificity a
+     rule in this block would have to out-argue, and a tie broken by source order
+     is not a thing to build a section on. Inline outranks the lot.
+     --------------------------------------------------------------------------- */
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .js .voices-run {
+      height: 340vh;
+    }
+
+    .js .voices-pin {
+      position: sticky;
+      top: var(--header-h);
+      display: block;
+      min-height: calc(100vh - var(--header-h));
+
+      /* The card, sized against the frame it has to live in rather than against
+         the page. Wide enough for a serif quote to set on three lines and tall
+         enough to carry the two readings under it without either being cut; the
+         height leaves 10rem for the counter and the disclosure below the deck,
+         so on a short laptop the card shrinks rather than the frame overflowing. */
+      --vx-w: clamp(20rem, 32vw, 30rem);
+      --vx-h: min(36rem, calc(100vh - var(--header-h) - 10rem));
+    }
+
+    /* Sticky already makes this the containing block for everything below; it is
+       named here so the layers read as what they are. */
+    .js .voices-section {
+      /* The panel ends the band flush against the contact band, which is the
+         same navy. Leave the section's closing padding in and there is a strip
+         of paper between two navies that only exists because of a rule about
+         section rhythm. */
+      padding-bottom: 0;
+    }
+
+    /* ── The headline ──────────────────────────────────────────────────────
+       It holds the screen on its own to begin with and then gives way, rising a
+       little as it goes so the deck is arriving into space the headline has just
+       left rather than crossing it. `pointer-events` off once it is on its way
+       out, because a faded headline sitting over the deck is still a headline
+       that can be selected. */
+    .js .voices-pin .vx-head {
+      position: absolute;
+      inset: 0 0 auto 0;
+      padding-top: clamp(2.5rem, 8vh, 5.5rem);
+      opacity: calc(1 - var(--vx-head, 0));
+      transform: translate3d(0, calc(var(--vx-head, 0) * -46px), 0);
+      transition: none;
+      pointer-events: none;
+      will-change: opacity, transform;
+    }
+
+    /* ── The deck ──────────────────────────────────────────────────────────
+       `.vx-shell` is the whole stage; `.vx-frame` is the box the cards are
+       centred in, with the counter and the disclosure taken out of the bottom of
+       it. That box matters beyond layout: the component measures it every frame
+       to find where a card comes to rest, which is where the closing panel opens
+       from — so the panel's first frame is the card exactly, with nothing to see
+       in the handover. */
+    .js .voices-pin .vx-shell {
+      position: absolute;
+      inset: 0;
+    }
+
+    .js .voices-pin .vx-frame {
+      position: absolute;
+      inset: 0 0 10rem 0;
+      opacity: 1;
+      transform: none;
+    }
+
+    /* No longer a scroll container. `overflow: visible` because the fan reaches
+       well outside this box on both sides and clipping it would cut the deck off
+       at two hard vertical edges. */
+    .js .voices-pin .vx-deck {
+      position: absolute;
+      inset: 0;
+      display: block;
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+      scroll-snap-type: none;
+      perspective: 1600px;
+    }
+
+    .js .voices-pin .vx-deck .vx-card {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: var(--vx-w);
+      height: var(--vx-h);
+      flex: none;
+      margin: 0;
+      overflow: hidden;
+      /* Below centre, so the fan pivots about the end a hand of cards would be
+         held at rather than about the middle of each card. At the card being
+         read there is no rotation and no scale, so the origin has no effect on
+         it at all — which is what keeps the panel's opening rect exact. */
+      transform-origin: 50% 64%;
+      transition: none;
+      box-shadow: 0 22px 48px -28px rgba(10, 17, 41, 0.4);
+      will-change: transform, opacity;
+    }
+
+    /* The row's trailing spacer pads a scroll range. There is no scroll range. */
+    .js .voices-pin .vx-deck .voices-tail {
+      display: none;
+    }
+
+    /* The red hairline, drawn in along the top edge as a card comes straight.
+       `--near` is 1 only at dead centre, so the accent is on exactly one card
+       and is at its full width only when that card has arrived. */
+    .js .voices-pin .vx-deck .vx-accent {
+      display: block;
+      position: absolute;
+      inset: 0 auto auto 0;
+      height: 2px;
+      width: calc(100% * var(--near, 0));
+      background-color: #ed1c24;
+    }
+
+    /* ── What the card being read reveals ─────────────────────────────────
+       Two ramps rather than one: the quote comes up across most of a step, the
+       two readings under it only once the card is genuinely settled, so the
+       card says who is speaking, then what they said, then what changed. Neither
+       is timed — both are functions of how far the card is from the centre — so
+       the order runs backwards as readily as forwards.
+
+       Both floors are zero, and that is the point. A card you are not reading
+       keeps its number and its role — that is what makes the fan legible as four
+       named sides rather than four blank sheets — and puts everything else away.
+       Leave the quote on at even a fifth of its opacity and the mid-point of a
+       card change is two quotes set across each other, which is the one thing a
+       fan of text cards must never be. */
+    .js .voices-pin .vx-deck .vx-face {
+      opacity: var(--face, 1);
+      transition: none;
+    }
+
+    .js .voices-pin .vx-deck .vx-quote {
+      opacity: var(--quote, 0);
+      transform: translate3d(0, calc((1 - var(--quote, 0)) * 10px), 0);
+      transition: none;
+    }
+
+    .js .voices-pin .vx-deck .vx-body {
+      opacity: var(--body, 0);
+      transform: translate3d(0, calc((1 - var(--body, 0)) * 14px), 0);
+      transition: none;
+    }
+
+    /* A tall card is a one-column card. Side by side these two readings would be
+       two columns of about fourteen characters each. */
+    .js .voices-pin .vx-deck .vx-body {
+      grid-template-columns: 1fr;
+    }
+
+    .js .voices-pin .vx-deck .vx-before {
+      border-bottom: 1px solid #e4e6ed;
+      padding-right: 0;
+      padding-bottom: 1.25rem;
+    }
+
+    .js .voices-pin .vx-deck .vx-after {
+      border-left: 0;
+      padding-left: 0;
+      padding-top: 1.25rem;
+    }
+
+    /* ── The counter and the disclosure ───────────────────────────────────
+       Both sit under the deck and both go with it: once the panel is opening
+       there is no card for a counter to count. The line is given the scroll
+       position rather than a width per card, and the transition goes with it — a
+       420ms ease on a value rewritten every frame lags the finger going down and
+       wobbles on a reversal. The first card's share is the floor, so the line
+       reads as covering the card being shown at either end of the run. */
+    .js .voices-pin .vx-rail {
+      position: absolute;
+      inset: auto 0 3.25rem 0;
+      margin-top: 0;
+      opacity: var(--vx-rail, 1);
+      transition: none;
+    }
+
+    .js .voices-pin .vx-rail .voices-progress {
+      transition: none;
+      width: calc(
+        var(--voice-lead, 100%) + (100% - var(--voice-lead, 100%)) *
+          var(--vx-p, 0)
+      );
+    }
+
+    .js .voices-pin .vx-note {
+      position: absolute;
+      inset: auto 0 0 0;
+      margin-top: 0;
+      opacity: calc(0.85 * var(--vx-rail, 1));
+      transform: none;
+      transition: none;
+    }
+
+    /* ── The closing panel ────────────────────────────────────────────────
+       It opens out of the fourth card: its rect is interpolated from that card's
+       resting box to the stage's own, widened to the window. The stage is sticky
+       at the header's height with a screen's height of its own, so its rect *is*
+       the screen below the header — which makes "full width, full height" two
+       measured numbers rather than a guess at what the shell's padding is.
+
+       Its ground comes up over the first fifth of the opening, while it is still
+       exactly the size and position of the card underneath it. Any later and the
+       navy would arrive as a flash across a card already half a screen wide.
+
+       Its own words come up only once it is genuinely wide, or the sentence
+       would be set across a card and then re-set across a screen. */
+    .js .voices-pin .vx-final {
+      position: absolute;
+      top: var(--vx-ft, 0);
+      right: var(--vx-fr, 0);
+      bottom: var(--vx-fb, 0);
+      left: var(--vx-fl, 0);
+      z-index: 200;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      padding: clamp(1.5rem, 4vw, 5rem) var(--vx-pad, 2.5rem);
+      border-radius: calc(7px * var(--vx-round, 1));
+      opacity: var(--vx-panel, 0);
+      transition: none;
+      will-change: opacity;
+    }
+
+    /* Nothing takes a click through a panel that is not there, and nothing takes
+       one through the counter once the panel is. */
+    .js .voices-pin[data-open="false"] .vx-final {
+      pointer-events: none;
+    }
+
+    .js .voices-pin[data-open="true"] .vx-rail {
+      pointer-events: none;
+    }
+
+    .js .voices-pin .vx-final-inner {
+      opacity: var(--vx-cta, 0);
+      transform: translate3d(0, calc((1 - var(--vx-cta, 0)) * 22px), 0);
+      transition: none;
+      will-change: opacity, transform;
+    }
+  }
+
+  /* Short laptops. At 1366×768 and below, the stage is about 590px of usable
+     height and the card is sized from it, so the card is the thing that gets
+     short — and the first thing to go in a short card is the bottom of the
+     second reading, which is the half of the card that says what changed.
+
+     What can give is the card's own padding and the space around the quote; the
+     type itself holds, because a quote set at 1.1rem is a quote that has stopped
+     being the thing on the card. */
+  @media (min-width: 1024px) and (max-height: 820px) and (prefers-reduced-motion: no-preference) {
+    .js .voices-pin .vx-deck .vx-card {
+      padding: 1.75rem;
+    }
+
+    .js .voices-pin .vx-deck .vx-quote {
+      margin-top: 1.1rem;
+      margin-bottom: 1.4rem;
+      font-size: 1.5rem;
+    }
+
+    .js .voices-pin .vx-deck .vx-body {
+      padding-top: 1.1rem;
+    }
+
+    .js .voices-pin .vx-deck .vx-before {
+      padding-bottom: 0.9rem;
+    }
+
+    .js .voices-pin .vx-deck .vx-after {
+      padding-top: 0.9rem;
+    }
+
+    .js .voices-pin .vx-frame {
+      inset: 0 0 8.5rem 0;
+    }
+
+    .js .voices-pin .vx-rail {
+      inset: auto 0 2.75rem 0;
+    }
+  }
+
   /* ── Emergency journey tracker ───────────────────────────────────────────
      The page's own left-hand hairline, turned into a route. `JourneyTracker`
      writes two numbers on this layer — `--journey-at`, where the unit is on the
@@ -2610,15 +3433,6 @@
   .js .flow-stage[data-lit="false"] .flow-label,
   .js .plate[data-run="false"] .plate-caption {
     opacity: 1;
-    transform: none;
-  }
-
-  /* Services switch outright. The selection still changes — indicator, number,
-     title, icon, panel — but nothing slides: neither the panel being left nor the
-     one arriving carries its 8px. The leaving state is named as well as the
-     resting one, or it would out-specify this rule and keep its translate. */
-  .js .svc-panel,
-  .js .svc-panel[data-leaving="true"] {
     transform: none;
   }
 

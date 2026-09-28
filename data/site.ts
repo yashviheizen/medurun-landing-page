@@ -196,6 +196,17 @@ export const services: Service[] = [
   },
 ];
 
+/**
+ * The line the service gallery lands on. The desktop sequence ends by handing the
+ * five services back to the page's ordinary light layout, and a closing list with
+ * nowhere to go is a list that stops. One link, to a destination the page already
+ * has — no new claim, no new promise, and the same words the contact band heads
+ * itself with.
+ */
+export const servicesClose = {
+  cta: { label: "Get in touch", href: "#contact" },
+} as const;
+
 export const driverPartner = {
   eyebrow: "Driver Partner",
   heading: "Drive with a network that treats minutes as the job.",
@@ -380,6 +391,19 @@ export const testimonials: Testimonial[] = [
       "One operational layer carries the fleet, the crews and the incoming requests — the same picture the hospitals are working from.",
   },
 ];
+
+/**
+ * The line the four voices close on, and the only thing left on screen once the
+ * deck has been read through. It restates what the four cards have in common
+ * rather than adding a claim of its own, and hands straight over to the contact
+ * band below it — which is why the link is the same action that band offers.
+ */
+export const voicesClose = {
+  eyebrow: "All four sides",
+  heading: "One emergency. One shared response.",
+  body: "The family, the crew, the ward and the agency are not four conversations about the same patient. They are four views of one request.",
+  action: "Get in touch",
+} as const;
 
 export const contact = {
   eyebrow: "Contact us",

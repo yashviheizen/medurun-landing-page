@@ -24,9 +24,9 @@ const SPAN = 0.75;
  * node, and a target that is still scrolling up the screen while something is being
  * aimed at it is a target that is never hit — the transform moves the drawing, the
  * scroll moves the node, and the two chase each other. At 0.42 the band locks under
- * the header at 58% of the hero's clock, which is two beats before the travel starts
- * at 60%, so from then on the node is standing still and the flight is a straight
- * line to a fixed point.
+ * the header at 58% of the hero's clock, which is exactly where the travel starts, so
+ * from then on the node is standing still and the flight is a straight line to a fixed
+ * point.
  *
  * It is also what removes the last of the dead scroll between the two sections: the
  * page is 0.42 of a hero screen shorter for it and nothing is cut.
@@ -34,25 +34,17 @@ const SPAN = 0.75;
 const EARLY = 0.42;
 
 /**
- * How far above the node's centre the drawing comes to rest, in CSS pixels.
- *
- * Not on the node: `.pos-drop` is the thin red thread that connects the two, and a
- * thread needs somewhere to be drawn. Forty pixels is the schematic's own top gap
- * (2rem) plus the 8px from the top of its box down to the centre of its first row,
- * which is exactly the length that stroke is given in globals.css.
- */
-const LAND = 40;
-
-/**
  * The window on the hero's clock over which the aim is taken.
  *
  * Two rectangles a frame, and only over the stretch that uses them. The travel does
- * not begin until 0.60 and 0.40 leaves the numbers settled well before then; by 0.90
- * the drawing has faded out and the canvas is clipped away, so the pair after that
- * would be measuring where to put something nobody can see — and `--hero-exit` sits
- * at 1 for the whole rest of the page, so without the far edge it would be two
- * rectangles a frame forever. Leaving the last written value in place is exactly
- * right: it is where the drawing came to rest, and scrolling back up picks the
+ * not begin until 0.58 and 0.40 leaves the numbers settled well before then; it lands
+ * at 0.76 and is held on its node to 0.86, and the aim is kept live through that hold
+ * so that anything which moves the node — a resize, a late font — is followed rather
+ * than left behind. By 0.90 the drawing has faded and the canvas is clipped away, so
+ * the pair after that would be measuring where to put something nobody can see — and
+ * `--hero-exit` sits at 1 for the whole rest of the page, so without the far edge it
+ * would be two rectangles a frame forever. Leaving the last written value in place is
+ * exactly right: it is where the drawing came to rest, and scrolling back up picks the
  * measurement up again at the same point.
  */
 const AIM_FROM = 0.4;
@@ -208,7 +200,15 @@ export function HeroMotion() {
       if (!scale) return;
 
       const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-      const dy = to.top + to.height / 2 - LAND - (from.top + from.height / 2);
+      /* Centre on centre. It used to come to rest forty pixels above the node so
+         that `.pos-drop` had a gap to be drawn in, and forty pixels above a 16px
+         marker is exactly what "floating above the network" looks like — the drawing
+         was over the node's column rather than on its node. The thread is now drawn
+         during the flight instead of after it, so it is the line the ambulance comes
+         down and it does not need the drawing to stop short of the end of it: its top
+         third is still showing above the landed glyph, which is the part of it that
+         reads as a route. */
+      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
       root.style.setProperty("--amb-dx", `${(dx / scale).toFixed(2)}px`);
       root.style.setProperty("--amb-dy", `${(dy / scale).toFixed(2)}px`);
     };
