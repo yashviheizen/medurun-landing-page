@@ -96,7 +96,11 @@
       linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 76px 76px;
-    -webkit-mask-image: radial-gradient(120% 90% at 70% 40%, #000 30%, transparent 78%);
+    -webkit-mask-image: radial-gradient(
+      120% 90% at 70% 40%,
+      #000 30%,
+      transparent 78%
+    );
     mask-image: radial-gradient(120% 90% at 70% 40%, #000 30%, transparent 78%);
   }
 
@@ -439,11 +443,18 @@
      The hero's departure.
 
      `--hero-exit` runs 0 to 1 as the section scrolls off, written from
-     `HeroMotion`. Two things read it and no more: the photograph swells four
-     percent, and the centred copy lifts 26px and softens. The section recedes
-     instead of merely scrolling away, and it costs no scroll distance to do it —
-     there is no sticky hero here, no pinned stage, and no extra height. The band
-     below arrives exactly where it always did.
+     `HeroMotion`. This is the departure as it reads *without* the pinned track —
+     on a tablet, a phone, or any viewport below `lg`: the photograph swells four
+     percent and the centred copy lifts 26px and softens, so the section recedes
+     instead of merely scrolling away, and it costs no scroll distance to do it.
+     No pinned stage, no extra height, and the band below arrives exactly where it
+     always did.
+
+     On a desktop viewport the same number is spent over 150vh of pinned track and
+     a good deal more reads it — the swell goes to ten percent, the copy leaves a
+     child at a time, the lamps and beacons come up, the rail walks to CARE and the
+     route bends down into Positioning. That is all declared further down, under
+     `.hero-track`; this block is the floor it builds on.
 
      The swell is the `scale` property rather than a transform, and that is not a
      stylistic choice: `bg-drift` already owns the stage's `transform`, animating
@@ -461,8 +472,16 @@
      rule exists at all, so the hero holds its arrival state at every scroll
      position rather than holding a clamped version of a transition.
      --------------------------------------------------------------------------- */
-  .hero-canvas {
+  /* On the document element rather than on the hero, because the last thing the
+     departure does happens in the section below it: the dispatch route turns down
+     out of the frame and is picked up again at the top of Positioning. A property
+     on `:root` inherits everywhere, so both halves of that line are driven by one
+     number and neither section has to hold a reference to the other. */
+  :root {
     --hero-exit: 0;
+  }
+
+  .hero-canvas {
     /* How far the centred group travels across the whole exit. A custom property
        rather than a literal because the phone breakpoint below overrides it and
        nothing else about the rule changes. */
@@ -604,6 +623,59 @@
       rgba(44, 104, 228, 0.3) 42%,
       rgba(40, 96, 220, 0) 74%
     );
+  }
+
+  /* ---------------------------------------------------------------------------
+     The headlamps.
+
+     Two more blooms in the same photograph, measured the same way as the roof
+     pair: the centres were read off the source frame at (0.432, 0.747) and
+     (0.564, 0.744) and converted through the `object-cover` crop above, so they
+     hold their place on the bodywork at every frame ratio instead of drifting
+     when the container changes shape.
+
+     Warm rather than coloured. A headlamp is white light with a little amber in
+     it, and it has to stay white — the whole point of lighting them late in the
+     hero's departure is that the vehicle reads as coming *at* the reader, and a
+     tinted beam would read as another signal lamp instead.
+
+     They are dark at rest and stay dark everywhere except inside the pinned
+     departure below, which is the only place there is a scroll position to ramp
+     them against. Under reduced motion, on a phone, and with no JavaScript at
+     all they are simply two invisible spans.
+     --------------------------------------------------------------------------- */
+  .hero-lamp {
+    position: absolute;
+    border-radius: 9999px;
+    translate: -50% -50%;
+    mix-blend-mode: screen;
+    opacity: 0;
+    background-image: radial-gradient(
+      closest-side,
+      rgba(255, 247, 228, 0.6) 0%,
+      rgba(255, 236, 194, 0.26) 44%,
+      rgba(255, 230, 178, 0) 76%
+    );
+  }
+
+  .hero-lamp--left,
+  .hero-lamp--right {
+    top: 74.8%;
+    top: calc(50cqh + 0.248 * max(100cqh, 56.28cqw));
+    height: 9.2cqw;
+    width: 9.2cqw;
+    height: calc(0.092 * max(100cqw, 177.684cqh));
+    width: calc(0.092 * max(100cqw, 177.684cqh));
+  }
+
+  .hero-lamp--left {
+    left: 43.1%;
+    left: calc(50cqw - 0.068 * max(100cqw, 177.684cqh));
+  }
+
+  .hero-lamp--right {
+    left: 56.5%;
+    left: calc(50cqw + 0.064 * max(100cqw, 177.684cqh));
   }
 
   /* A long, even breath - 4.4s out and back, with the blue lamp half a cycle
@@ -983,7 +1055,9 @@
   }
 
   .flow-node {
-    transition: opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      opacity 0.3s ease-out,
+      transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .js .flow-stage[data-lit="false"] .flow-node {
@@ -1114,13 +1188,15 @@
      `motion-reduce:hidden`, so nothing is left sitting on the rail either. */
   @media (prefers-reduced-motion: no-preference) {
     .flow-signal {
-      animation: flow-signal var(--flow-cycle) linear var(--flow-lead) infinite both;
+      animation: flow-signal var(--flow-cycle) linear var(--flow-lead) infinite
+        both;
     }
 
     .flow-ping {
       animation: flow-ping var(--flow-cycle) linear infinite both;
       animation-delay: calc(
-        var(--flow-lead) + var(--flow-cycle) * var(--flow-travel) * var(--flow-at)
+        var(--flow-lead) + var(--flow-cycle) * var(--flow-travel) *
+          var(--flow-at)
       );
     }
   }
@@ -1172,7 +1248,9 @@
      Its travel is deliberately short of the 28px the headline and body get: it is
      a footnote arriving with them, not a fourth thing competing for the eye. */
   .op-stagger {
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    transition:
+      opacity 0.5s ease-out,
+      transform 0.5s ease-out;
   }
 
   .js .reveal[data-visible="false"] .op-stagger {
@@ -1208,6 +1286,510 @@
 
   .js .reveal[data-visible="true"] .phone-ring--second {
     animation-delay: 0.55s;
+  }
+
+  /* ===========================================================================
+     ONE EMERGENCY JOURNEY — the three pinned desktop sequences.
+
+     Three sections stop scrolling past and instead scroll *through*: the hero
+     hands a route down to Positioning, Positioning draws that route across the
+     network, and Why stacks its four cards on the spot. All three use the exact
+     mechanism `.how-track` / `.how-stage` above already established — an outer
+     track taller than the screen, an inner stage pinned under the header, and
+     `pinnedAt()` in `lib/motion.ts` turning the difference into a 0-to-1 number
+     — because that mechanism is measured off the DOM by the components, so these
+     heights are the single place the pacing is written down.
+
+     Everything here is gated on `lg` *and* `prefers-reduced-motion`, which is
+     what makes the brief's two escape hatches free: below 1024px and for a reader
+     who has asked for less motion none of these rules exist, so those readers get
+     the plain flow-and-fade page they got before, in its completed state, with no
+     stilled version of a sequence to maintain.
+     =========================================================================== */
+
+  /* Off everywhere by default: the two route continuations only mean something
+     while the hero is pinned, so outside the cinematic query they are not drawn
+     rather than drawn and hidden. */
+  .hero-drop,
+  .route-drop {
+    display: none;
+  }
+
+  /* The drawing edge. See the pinned block for the ramp — this is only its
+     resting state, which is nothing: with no JavaScript, on a phone, or under
+     reduced motion there is no drawing to have an edge. */
+  .flow-edge {
+    opacity: 0;
+  }
+
+  /* ---------------------------------------------------------------------------
+     1. Hero → Positioning.
+
+     150vh of track, a screen of stage: half a screen of scroll to play the
+     departure in. Short on purpose. The hero is the first thing on the page and
+     a reader who has to scroll a full extra screen to get past the masthead has
+     been charged for the effect rather than shown it.
+
+     Every value below is a pure function of `--hero-exit`, so scrolling up runs
+     the whole thing backwards for free — there is no transition, no easing state
+     and nothing that has to be told the direction changed.
+     --------------------------------------------------------------------------- */
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .hero-track {
+      height: 150vh;
+    }
+
+    /* Two classes, because the section carries Tailwind's `relative`: a bare
+       `.hero-canvas` would tie on specificity and lose to the utility. */
+    .hero-track .hero-canvas {
+      position: sticky;
+      top: var(--header-h);
+    }
+
+    /* The lamps and the beacons come up together over the back half. By then the
+       copy is most of the way gone and the photograph is at its largest, so the
+       light is the last thing to arrive and the only thing left moving. */
+    .hero-track .hero-canvas {
+      --hero-glow: clamp(0, calc((var(--hero-exit) - 0.52) / 0.48), 1);
+    }
+
+    /* `filter` rather than `opacity` and `scale`, which `beacon-pulse` owns
+       outright — it is an infinite animation with `both` fill, so anything written
+       to those two properties from here would simply be ignored for the life of
+       the page. Brightness multiplies whatever the breath is currently at, so the
+       lamps burn harder without stopping turning. */
+    .hero-track .hero-beacon {
+      filter: brightness(calc(1 + 0.7 * var(--hero-glow)));
+    }
+
+    .hero-track .hero-lamp {
+      opacity: calc(0.66 * var(--hero-glow));
+    }
+
+    /* Ten percent instead of four. The hero is pinned now, so the swell has half a
+       screen of scroll to happen over rather than the tail of a section leaving:
+       it can be the approach the brief asks for instead of a parting flourish. */
+    .hero-stage {
+      scale: calc(1 + 0.1 * var(--hero-exit));
+    }
+
+    /* The centred group leaves in order, not as a block. The wrapper keeps its
+       lift; each child gets its own 42%-wide window, offset by `--hero-lead`, so
+       the logo goes first and the buttons last and the eye follows the departure
+       up the column.
+
+       The properties are `translate` and `filter`, never `transform` and
+       `opacity`, and that is forced rather than chosen: `rise-in` and its
+       siblings are the entrance animations on these exact elements and they are
+       filled `both`, so they own transform and opacity permanently. `translate`
+       is a separate property that composes with the animated transform, and
+       `filter: opacity()` reaches the same result through a different channel. */
+    .hero-track .hero-copy {
+      /* The group fade moves to the children, which do it in sequence. */
+      opacity: 1;
+    }
+
+    .hero-copy > * {
+      --hero-lead: 0;
+      --hero-gone: clamp(
+        0,
+        calc((var(--hero-exit) - var(--hero-lead)) / 0.42),
+        1
+      );
+      translate: 0 calc(var(--hero-gone) * -34px);
+      filter: opacity(calc(1 - var(--hero-gone)));
+    }
+
+    .hero-copy > :nth-child(2) {
+      --hero-lead: 0.06;
+    }
+
+    .hero-copy > :nth-child(3) {
+      --hero-lead: 0.12;
+    }
+
+    .hero-copy > :nth-child(4) {
+      --hero-lead: 0.19;
+    }
+
+    .hero-copy > :nth-child(5) {
+      --hero-lead: 0.26;
+    }
+
+    /* The rail now outlasts the copy by much more than it did unpinned. The last
+       child of the group is gone at 0.68; the rail holds full strength until 0.88
+       and then goes in the final eighth, so there is a stretch in the middle of
+       the departure where the route is the only thing on the frame. That stretch
+       is the point of the sequence. */
+    .hero-canvas .hero-rail {
+      opacity: clamp(0, calc((1 - var(--hero-exit)) / 0.12), 1);
+
+      /* The rail's own clock, rescaled from the departure. It starts a beat after
+         the copy does and finishes at 0.66, which leaves a third of the track for
+         the route to turn down out of the frame. */
+      --rail-t: clamp(0, calc((var(--hero-exit) - 0.06) / 0.6), 1);
+    }
+
+    /* Scroll takes the rail off the wall clock. The four loop animations are
+       cancelled outright and each part re-derived from `--rail-t`, so the signal
+       is wherever the reader has put it — including back at REQUEST if they
+       scrolled up. Running both would put two dots on one line. */
+    .hero-canvas .rail-fill {
+      animation: none;
+      clip-path: inset(0 calc(100% * (1 - var(--rail-t))) 0 0);
+    }
+
+    .hero-canvas .rail-run {
+      animation: none;
+      transform: translateX(calc(100% * var(--rail-t)));
+      opacity: clamp(0, calc(var(--rail-t) / 0.03), 1);
+    }
+
+    /* A stop lights as the signal crosses it: `* 26` is a 4%-wide window either
+       side of `--rail-at`, which at this scale is about 20px of scroll. REQUEST
+       carries `--rail-on: 1` so it is lit before anything has moved — the route
+       starts somewhere. */
+    .hero-canvas .rail-lit {
+      animation: none;
+      opacity: clamp(
+        0,
+        calc((var(--rail-t) - var(--rail-at)) * 26 + var(--rail-on)),
+        1
+      );
+    }
+
+    /* Proximity rather than a timed ring: the bloom is a function of how close the
+       signal is to this stop, so it swells on approach and falls away behind,
+       forwards and backwards alike. `max(a - b, b - a)` is the absolute value —
+       `abs()` is too new to rely on here. */
+    .hero-canvas .rail-ping {
+      --rail-near: clamp(
+        0,
+        calc(
+          1 - 13 *
+            max(var(--rail-t) - var(--rail-at), var(--rail-at) - var(--rail-t))
+        ),
+        1
+      );
+      animation: none;
+      opacity: calc(0.5 * var(--rail-near));
+      transform: scale(calc(1 + 1.4 * var(--rail-near)));
+    }
+
+    /* The route leaving. Once the signal has reached CARE the line turns down out
+       of the hero — a short tick below the labels, because the hero clips its own
+       overflow and there are only a few pixels of runway under the rail — and is
+       picked up at the top of Positioning by `.route-drop`, which is the same red
+       at the same 87.5% offset inside the same `.shell`. Two elements, one line:
+       both are scaled from `--hero-exit`, which is on `:root` and therefore
+       inherits into both sections. */
+    .hero-drop,
+    .route-drop {
+      display: block;
+      width: 1px;
+      transform-origin: top center;
+      transform: scaleY(clamp(0, calc((var(--hero-exit) - 0.68) / 0.3), 1));
+      background-image: linear-gradient(
+        to bottom,
+        rgba(237, 28, 36, 0.9),
+        rgba(237, 28, 36, 0)
+      );
+    }
+
+    /* Clear of the CARE label rather than starting at the rail's midline, which
+       would draw straight through the word. */
+    .hero-drop {
+      top: calc(50% + 2.4rem);
+      height: 4rem;
+    }
+
+    .route-drop {
+      top: 0;
+      height: 100%;
+    }
+  }
+
+  /* ---------------------------------------------------------------------------
+     2. The sticky Positioning network.
+
+     240vh — a screen and a bit more than a screen of scroll for five stages, so
+     each one gets a little over a quarter screen. Longer than the hero because
+     there is something to read at every stage here, and `NetworkFlow` maps the
+     first 78% of it to drawing the line: the last fifth is the finished network
+     held lit while the section releases, so About does not arrive on top of the
+     schematic completing.
+     --------------------------------------------------------------------------- */
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .pos-track {
+      height: 240vh;
+    }
+
+    .pos-stage {
+      position: sticky;
+      top: var(--header-h);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    /* `--flow-draw` is written every frame, so the edge needs no transition: it
+       fades in over the first 3% and out over the last 5%, and in between it is
+       the head of the line being drawn. */
+    .flow-edge {
+      transform: translateX(calc(100% * var(--flow-draw)));
+      opacity: clamp(
+        0,
+        min(calc(var(--flow-draw) / 0.03), calc((1 - var(--flow-draw)) / 0.05)),
+        1
+      );
+    }
+
+    /* The stage being read carries its supporting line; the others do not. This is
+       the one piece of the schematic that is desktop-only — on a phone all five
+       statuses are always visible, because there the column is a list to read
+       rather than a sequence to watch, and hiding four fifths of it would be
+       losing content to an effect. */
+    .flow-status {
+      transition:
+        opacity 0.34s ease-out,
+        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .js .flow-stage[data-state="next"] .flow-status,
+    .js .flow-stage[data-state="done"] .flow-status {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+
+    /* Three readable weights, none of them unreadable. The stage being read is at
+       full strength, the ones behind it settle to 0.72, and the ones ahead keep
+       the 0.72 the drawing pass already gives them — the house floor on this page
+       is 0.55 and nothing here goes near it. */
+    .js .flow-stage[data-state="done"] .flow-label {
+      opacity: 0.72;
+    }
+
+    .js .flow-stage[data-state="current"] .flow-label,
+    .js .flow-stage[data-state="full"] .flow-label {
+      opacity: 1;
+    }
+
+    /* Node emphasis, in `scale` rather than `transform` so it multiplies with the
+       `scale(0.4)` the un-lit state uses instead of fighting it. Twelve percent:
+       these markers are 8 to 16px across, and anything more reads as a wobble. */
+    .js .flow-stage[data-state="current"] .flow-node {
+      scale: 1.12;
+    }
+
+    /* The whole network lit at once, briefly, as the last stage lands — the
+       sequence signing off before the section releases into About. It is a
+       one-shot animation rather than a held state so it reads as a flare and
+       settles by itself; reversing back up past the flare threshold removes the
+       class and re-arms it. */
+    .js .flow-stage[data-state="full"] .flow-node {
+      animation: flow-flare 1.3s cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+    }
+  }
+
+  @keyframes flow-flare {
+    0%,
+    30% {
+      scale: 1.26;
+    }
+
+    100% {
+      scale: 1;
+    }
+  }
+
+  /* ---------------------------------------------------------------------------
+     3. The Why MEDURUN stack.
+
+     The four-column rule becomes one pile. 250vh of track gives each card about
+     two thirds of a screen to arrive in, which at `--why-step` apart leaves the
+     number and the title of every covered card showing — the stack is meant to
+     read as four things one of which is open, not as a card with three shadows.
+
+     Scoped to `.js` throughout, and that is load-bearing twice over. It buys the
+     specificity to override the Tailwind column utilities on `.principle`
+     (`lg:px-7`, `lg:first:pl-0` and the rest are single-class selectors in a
+     later layer, so a two-class rule here would lose the tie). And it is correct:
+     with no JavaScript `--why-t` is never written, so the pile would sit frozen
+     at its first frame. No JS, no stack — the four cards stay a grid.
+     --------------------------------------------------------------------------- */
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .why-track {
+      height: 250vh;
+    }
+
+    .why-stage {
+      position: sticky;
+      top: var(--header-h);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    /* Closer to the heading than the grid version, because the heading has to stay
+       on screen above a pile that is three quarters of a screen tall. */
+    .js .why-band {
+      margin-top: 2.5rem;
+      /* Written every frame by `PrinciplesBand`; declared here so the calcs below
+         are valid on the first paint, before any scroll has happened. */
+      --why-t: 0;
+    }
+
+    .js .why-stack {
+      display: block;
+      position: relative;
+      max-width: 52rem;
+
+      /* How far each card rests below the one before it, and the one number the
+         whole pile is built from: the rest offsets, the stack's height and every
+         card's rise are all derived from it. 5.8rem is the measured height of a
+         card's number row plus its title plus a few pixels of air — any less and
+         the card on top cuts the title of the card under it, which is the one
+         thing the pile cannot do if it is to read as four things rather than one
+         card with three shadows. */
+      --why-step: 5.8rem;
+
+      /* The first card stays in flow, so the stack is exactly as tall as a card
+         plus the three seats above it — no height has to be guessed, and a card
+         that grows a line at some width takes the stack with it. */
+      padding-bottom: calc(3 * var(--why-step));
+
+      /* What hides a card before its turn. Every card parks exactly on this edge
+         (see `--why-rise`), so an unarrived card is not faded or shrunk, it is
+         simply not in the box yet — which is what lets the cards be fully opaque
+         and actually occlude each other rather than ghosting the text underneath. */
+      overflow: hidden;
+    }
+
+    /* Every card at the same origin, offset down by its seat. `z-index` comes from
+       the component, so a later card always covers an earlier one. */
+    .js .why-stack .principle {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(var(--why-seat) * var(--why-step));
+
+      /* The four-column dressing, undone: no left rule, the top rule back, and
+         padding that belongs to a full-width card. `cn()` is a plain join rather
+         than tailwind-merge, so the utilities cannot be replaced at the class
+         level — they are overridden here instead, and the `.js` on the selector is
+         what buys the specificity to do it. */
+      border-left-width: 0;
+      border-top-width: 1px;
+      padding: 1.5rem 1.5rem 1.75rem;
+
+      /* Opaque, so a card genuinely occludes the one it slides over. This is the
+         section's own ground colour, which is why the pile reads as one surface
+         rather than four panels floating on it — and the shadow above the card's
+         own edge is the only thing that says there is anything underneath. It is
+         cast upward only, and it is nearly nothing: enough that the covering
+         reads, not enough to turn an editorial band into a card UI. */
+      background-color: #101b3c;
+      box-shadow: 0 -16px 26px -16px rgba(4, 8, 22, 0.8);
+
+      /* Two windows, both 24% wide: one for this card arriving, one for the next
+         card covering it. `--why-lead` and `--why-next` are the scroll positions
+         those happen at, written per card by the component from the same constants
+         it uses to decide which card is current. */
+      --why-in: clamp(0, calc((var(--why-t) - var(--why-lead)) / 0.24), 1);
+      --why-over: clamp(0, calc((var(--why-t) - var(--why-next)) / 0.24), 1);
+
+      /* Far enough to sit on the stack's bottom edge and no further, which is why
+         `100%` — the card's own height — is in it: the rise is measured from where
+         the card rests to where the clip is, so every card leaves the edge at the
+         moment its window opens and none of them travels much more than it has to.
+         Later cards have less to climb, which is also how a real pile behaves.
+
+         The 3rem is the slack. `100%` is the card's *own* height and the clip sits
+         at the *tallest* card's, so a card with a one-line body would otherwise
+         park a couple of dozen pixels short and show a sliver of itself waiting
+         its turn. Overshooting by more than the cards can differ by puts every one
+         of them safely outside the box, and costs the tallest card 48px of extra
+         travel that nobody can see. */
+      --why-rise: calc(100% + 3rem + (3 - var(--why-seat)) * var(--why-step));
+
+      transform-origin: center top;
+      transform: translate3d(0, calc((1 - var(--why-in)) * var(--why-rise)), 0)
+        scale(calc(1 - 0.03 * var(--why-over)));
+
+      /* No transition: the position is a function of the scroll offset and is
+         rewritten every frame. A transition on top of that would lag the pointer
+         and turn a reversal into a wobble. */
+      transition: none;
+    }
+
+    /* The covering dim sits on the contents, never on the card. An element-level
+       opacity would take the background with it and the card would stop hiding
+       what is behind it — which is exactly the ghosting the opaque background is
+       there to prevent. Twelve percent is the brief's "only a little": the number
+       and title that stay showing above the card on top have to stay legible.
+
+       The accent is left out because it carries its own emphasis state, and it is
+       the one mark on a covered card that should not recede. */
+    .js .why-stack .principle > *:not(.principle-accent) {
+      opacity: calc(1 - 0.12 * var(--why-over));
+    }
+
+    /* Seats. Four numbers, and both the rest offset and the rise are derived from
+       them, so the depth of the pile is one value in one place. */
+    .js .why-stack .principle:nth-child(1) {
+      --why-seat: 0;
+      /* In flow, so the stack has a height to be. */
+      position: relative;
+    }
+
+    .js .why-stack .principle:nth-child(2) {
+      --why-seat: 1;
+    }
+
+    .js .why-stack .principle:nth-child(3) {
+      --why-seat: 2;
+    }
+
+    .js .why-stack .principle:nth-child(4) {
+      --why-seat: 3;
+    }
+
+    /* Wider measure than the column version. A card is 52rem across here rather
+       than a quarter of the band, so 34ch would set a three-line paragraph in the
+       left third of it — and every line the body loses is a line the pile does not
+       have to be tall enough for. */
+    .js .why-stack .principle p {
+      max-width: 52ch;
+    }
+
+    /* The accent draws as the card arrives, from a scroll position rather than a
+       transition, for the same reason the card itself does. It lags the card
+       slightly and finishes before the card has landed, so the line is being drawn
+       under a card that is still moving. */
+    .js .why-stack .principle-accent {
+      transform: scaleX(clamp(0, calc((var(--why-in) - 0.15) / 0.5), 1));
+      transition: opacity 0.4s ease-out;
+    }
+  }
+
+  /* A short laptop gets a tighter pile. 250vh of track is fine — the scroll
+     distance is relative to the viewport either way — but the stage has to fit
+     under the header at 660px of height, and the seats and the gap above them are
+     the two things that can give without touching the cards themselves. */
+  @media (min-width: 1024px) and (max-height: 860px) and (prefers-reduced-motion: no-preference) {
+    .js .why-band {
+      margin-top: 0.75rem;
+    }
+
+    .js .why-stack .principle {
+      padding: 1.25rem 1.5rem 1.5rem;
+    }
+
+    .js .why-stack {
+      --why-step: 5.25rem;
+    }
   }
 }
 
@@ -1291,7 +1873,7 @@
   /* The hero holds its arrival state at every scroll position: no swell, no lift,
      no fade. `HeroMotion` stops writing the property, and this makes the rules
      that read it inert even if a stale value is left on the element. */
-  .hero-canvas {
+  :root {
     --hero-exit: 0;
   }
 }

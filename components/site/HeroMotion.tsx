@@ -1,56 +1,95 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { onScroll, stilled } from "@/lib/motion";
+import { clamp, onPinned, onScroll, pinnedAt, stilled } from "@/lib/motion";
 
 /**
- * How much of the hero's own height the exit is spread over. Three quarters, not
- * all of it: the transition has to be finished by the time the hero leaves rather
- * than still running as its last pixels go, or the copy is caught mid-fade at the
- * exact moment the next section takes the screen.
+ * How much of the hero's own height the unpinned exit is spread over. Three
+ * quarters, not all of it: the transition has to be finished by the time the hero
+ * leaves rather than still running as its last pixels go, or the copy is caught
+ * mid-fade at the exact moment the next section takes the screen.
+ *
+ * This is the tablet and phone number. On a desktop frame the hero is pinned and
+ * the track's own length is the span — see `pinnedAt`.
  */
 const SPAN = 0.75;
 
 /**
- * The hero's departure.
+ * The hero's departure — the first movement of the page's one journey.
  *
- * As the page scrolls off the hero the photograph swells very slightly and the
- * centred copy lifts and softens — the section recedes rather than simply
- * scrolling away. Everything it does is one custom property, `--hero-exit`, read
- * from 0 to 1; the rules that consume it live beside the rest of the hero in
- * globals.css, so the geometry and the motion are not written down in two places.
+ * Everything it does is one custom property, `--hero-exit`, read 0 to 1. The rules
+ * that consume it live beside the rest of the hero in globals.css, so the geometry
+ * and the motion are not written down in two places, and adding a consumer costs a
+ * declaration rather than a subscription.
  *
- * Nothing here is sticky and nothing is pinned. The hero occupies exactly the
- * height it always did and the section below it arrives at exactly the scroll
- * position it always did: the brief's "do not delay access to the next section"
- * is not a thing to be careful about here, it is a property of driving the effect
- * from a transform rather than from scroll distance.
+ * It is written to the document element rather than to the hero, and that is
+ * deliberate: the last thing the departure does is send the dispatch route down
+ * out of the frame, and the section that catches it is the next one. A property on
+ * `:root` inherits everywhere, so the two halves of that line are driven by one
+ * number without either section holding a reference to the other. The hero reads
+ * it by inheritance like anything else.
+ *
+ * On a desktop frame the hero is pinned: it holds under the header while a ~150vh
+ * track scrolls past it, and the progress through that track is the clock. Below
+ * `lg`, or for a reader who has asked for less motion, there is no track at all —
+ * the hero occupies exactly the height it always did, the section below arrives at
+ * exactly the scroll position it always did, and the exit is the shorter pass it
+ * has always been. `onPinned` is the single query both this and the stylesheet are
+ * gated on, so they cannot disagree about which of the two is happening.
+ *
+ * Both readings are taken live off the DOM every frame rather than accumulated, so
+ * scrolling up runs the whole transition backwards exactly — there is no state
+ * here to get out of step with the scrollbar.
  *
  * The component renders a marker rather than a wrapper so that `Hero` itself can
  * stay a server component — the hero is the page's largest subtree and the
  * heaviest image on it, and none of that needs to ship to the client to move a
- * photograph four percent.
+ * photograph.
  */
 export function HeroMotion() {
   const ref = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
     const canvas = ref.current?.closest<HTMLElement>(".hero-canvas");
-    if (!canvas) return;
+    const track = canvas?.closest<HTMLElement>(".hero-track");
+    if (!canvas || !track) return;
+
+    const root = document.documentElement;
+    const write = (value: number) =>
+      root.style.setProperty("--hero-exit", value.toFixed(4));
 
     if (stilled()) {
       // Named explicitly rather than left to the stylesheet's default: under
       // reduced motion the hero holds its arrival state at every scroll position.
-      canvas.style.setProperty("--hero-exit", "0");
+      write(0);
       return;
     }
 
-    return onScroll(() => {
-      const rect = canvas.getBoundingClientRect();
-      const span = rect.height * SPAN;
-      const exit = span > 0 ? Math.min(Math.max(-rect.top / span, 0), 1) : 0;
-      canvas.style.setProperty("--hero-exit", exit.toFixed(4));
+    let pinned = false;
+    let off: (() => void) | null = null;
+
+    const read = () =>
+      pinned
+        ? pinnedAt(track, canvas)
+        : clamp(
+            -canvas.getBoundingClientRect().top /
+              Math.max(canvas.offsetHeight * SPAN, 1),
+          );
+
+    const stop = onPinned((on) => {
+      pinned = on;
+      // Resubscribing rather than branching inside the listener, so that the one
+      // frame a breakpoint is crossed on is measured under the new geometry — the
+      // track's height changes in the same layout pass the query flips in.
+      off?.();
+      off = onScroll(() => write(read()));
     });
+
+    return () => {
+      stop();
+      off?.();
+      root.style.removeProperty("--hero-exit");
+    };
   }, []);
 
   return <span ref={ref} aria-hidden="true" className="hidden" />;

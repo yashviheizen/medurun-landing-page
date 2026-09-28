@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Eye, Gauge, ShieldCheck, Timer, type LucideIcon } from "lucide-react";
 import { pillars, type Pillar } from "@/data/site";
-import { onScroll, stilled, viewport } from "@/lib/motion";
+import {
+  clamp,
+  onPinned,
+  onScroll,
+  pinnedAt,
+  stilled,
+  viewport,
+} from "@/lib/motion";
 import { cn } from "@/lib/cn";
 
 const icons: Record<Pillar["icon"], LucideIcon> = {
@@ -20,7 +27,8 @@ const icons: Record<Pillar["icon"], LucideIcon> = {
  * This governs the indicator only. The cards' own entrance is not a function of
  * the sweep — see `entered` below.
  */
-const revealAt = (index: number, count: number) => ((index + 0.35) / count) * 0.9;
+const revealAt = (index: number, count: number) =>
+  ((index + 0.35) / count) * 0.9;
 
 /**
  * The beat between one card arriving and the next.
@@ -32,6 +40,25 @@ const revealAt = (index: number, count: number) => ((index + 0.35) / count) * 0.
  * only 360ms behind the first, well inside its own transition.
  */
 const CARD_STEP = 120;
+
+/**
+ * The stack's timetable, in shares of the pinned track.
+ *
+ * `STACK_LEAD` is the beat after the band settles under the header and before the
+ * second principle starts to climb — the first one is already standing there when
+ * the stage pins, because a pinned section that opens empty reads as a section
+ * that has not loaded. `STACK_GAP` is then one principle's turn and `STACK_IN` the
+ * part of that turn it spends moving, so each card has a moment at rest, being
+ * read, before the next one comes up over it. Three cards move, the fourth's turn
+ * ends at 0.88, and the last eighth of the track is the settle before the section
+ * lets go.
+ */
+const STACK_LEAD = 0.08;
+const STACK_GAP = 0.28;
+const STACK_IN = 0.24;
+
+/** Where a principle's own climb begins, as a share of the track. */
+const arrives = (index: number) => STACK_LEAD + (index - 1) * STACK_GAP;
 
 /**
  * The network principles band: four principles on one ruled line, with a single red
@@ -77,6 +104,13 @@ export function PrinciplesBand() {
    * the sweep meant the four cards faded back out when the reader scrolled up.
    */
   const [entered, setEntered] = useState(false);
+  /**
+   * The band is a stack rather than a row. Read from the same media query the
+   * stylesheet's stacking rules are written inside, on mount rather than during
+   * render — the server has no `matchMedia`, so the first paint is the row, and a
+   * frame later it is whichever of the two this frame actually is.
+   */
+  const [stacked, setStacked] = useState(false);
 
   useEffect(() => {
     const node = ref.current;
@@ -110,18 +144,45 @@ export function PrinciplesBand() {
       cleanup = () => observer.disconnect();
     }
 
-    const off = onScroll(() => {
-      const rect = node.getBoundingClientRect();
-      const view = viewport();
-      // 0 when the band's top edge reaches 88% of the viewport height, 1 when its
-      // bottom edge reaches 40% — so the sweep finishes while the band is still
-      // comfortably on screen rather than as it leaves.
-      const span = rect.height + view * 0.48;
-      setProgress(Math.min(Math.max((view * 0.88 - rect.top) / span, 0), 1));
+    const track = node.closest<HTMLElement>(".why-track");
+    const stage = node.closest<HTMLElement>(".why-stage");
+
+    let pinned = false;
+    let off: (() => void) | null = null;
+
+    const stop = onPinned((on) => {
+      pinned = on && !!track && !!stage;
+      setStacked(pinned);
+
+      // Resubscribed rather than branched inside the listener, so the frame a
+      // breakpoint is crossed on is measured under the geometry that breakpoint
+      // brings with it.
+      off?.();
+      off = onScroll(() => {
+        if (pinned && track && stage) {
+          const at = pinnedAt(track, stage);
+          // Straight to the element: the four cards' positions are a function of
+          // this and they move every frame, which is not something to re-render
+          // twelve elements for. React is told the integer below instead.
+          node.style.setProperty("--why-t", at.toFixed(4));
+          setProgress(at);
+          return;
+        }
+
+        node.style.removeProperty("--why-t");
+        const rect = node.getBoundingClientRect();
+        const view = viewport();
+        // 0 when the band's top edge reaches 88% of the viewport height, 1 when
+        // its bottom edge reaches 40% — so the sweep finishes while the band is
+        // still comfortably on screen rather than as it leaves.
+        const span = rect.height + view * 0.48;
+        setProgress(clamp((view * 0.88 - rect.top) / span));
+      });
     });
 
     return () => {
-      off();
+      stop();
+      off?.();
       cleanup?.();
     };
   }, []);
@@ -129,15 +190,31 @@ export function PrinciplesBand() {
   const revealedCount = pillars.filter(
     (_, index) => progress >= revealAt(index, pillars.length),
   ).length;
-  const swept = still ? 0 : Math.max(revealedCount - 1, 0);
+  /**
+   * Which principle the band is currently on.
+   *
+   * Stacked, that is simply the topmost card that has finished climbing — the one
+   * the reader is looking at, by construction. In a row it is the sweep, which has
+   * to guess. Either way a pointer or a focus ring outranks it.
+   */
+  const reached = stacked
+    ? pillars.filter(
+        (_, index) =>
+          index === 0 || progress >= arrives(index) + STACK_IN * 0.5,
+      ).length - 1
+    : Math.max(revealedCount - 1, 0);
+  const swept = still ? 0 : reached;
   const active = picked ?? swept;
 
   return (
-    <div ref={ref} className="mt-12 lg:mt-16">
+    <div ref={ref} className="why-band mt-12 lg:mt-16">
       {/* The top line and its one red indicator. A quarter of the rule wide, moved
           to the principle under it — so the line reports a position rather than
           filling up, and four columns never carry four accents. */}
-      <div aria-hidden="true" className="relative hidden h-px w-full bg-white/15 lg:block">
+      <div
+        aria-hidden="true"
+        className="relative hidden h-px w-full bg-white/15 lg:block"
+      >
         <span
           className="principle-mark absolute inset-y-0 left-0 block bg-red"
           style={{
@@ -155,7 +232,7 @@ export function PrinciplesBand() {
         ))}
       </div>
 
-      <ul className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0">
+      <ul className="why-stack grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0">
         {pillars.map((pillar, index) => {
           const Icon = icons[pillar.icon];
           const current = index === active;
@@ -169,6 +246,19 @@ export function PrinciplesBand() {
            * accent took a third of a second to acknowledge the cursor.
            */
           const accentStep = { transitionDelay: `${index * CARD_STEP}ms, 0ms` };
+          /**
+           * The card's place in the stack, handed to the stylesheet as two plain
+           * numbers: where its own climb starts and where the climb of the card
+           * that will cover it starts. The first never climbs — it is already
+           * standing when the stage pins — and the last is never covered, so both
+           * are given a value outside the run rather than a special case.
+           */
+          const seat = {
+            ...step,
+            "--why-lead": index === 0 ? -1 : arrives(index),
+            "--why-next": index === pillars.length - 1 ? 2 : arrives(index + 1),
+            zIndex: index + 1,
+          } as CSSProperties;
 
           return (
             <li
@@ -181,12 +271,19 @@ export function PrinciplesBand() {
                */
               tabIndex={0}
               onMouseEnter={() => setPicked(index)}
-              onMouseLeave={() => setPicked((value) => (value === index ? null : value))}
+              onMouseLeave={() =>
+                setPicked((value) => (value === index ? null : value))
+              }
               onFocus={() => setPicked(index)}
-              onBlur={() => setPicked((value) => (value === index ? null : value))}
-              style={step}
+              onBlur={() =>
+                setPicked((value) => (value === index ? null : value))
+              }
+              style={seat}
               className="principle relative border-t border-white/15 pt-7 lg:border-l lg:border-t-0 lg:border-white/12 lg:px-7 lg:pt-8 lg:first:border-l-0 lg:first:pl-0 lg:last:pr-0"
-              data-revealed={entered ? "true" : "false"}
+              /* Stacked, the climb *is* the entrance — a second hidden state on
+                 top of it would hold the first card at a quarter strength while it
+                 is the only thing on the stage. */
+              data-revealed={entered || stacked ? "true" : "false"}
             >
               {/* Each principle's own accent, drawn left to right as the sweep
                   reaches it — so the band establishes itself a station at a time
@@ -224,7 +321,9 @@ export function PrinciplesBand() {
                   aria-hidden="true"
                   className={cn(
                     "transition-[color,transform] duration-300 ease-out",
-                    current ? "text-white/85 motion-safe:scale-[1.12]" : "text-white/55 motion-safe:scale-100",
+                    current
+                      ? "text-white/85 motion-safe:scale-[1.12]"
+                      : "text-white/55 motion-safe:scale-100",
                   )}
                 />
               </div>

@@ -32,6 +32,18 @@ import type { CSSProperties } from "react";
  * cannot drift out of step with the signal that reaches it, because neither of
  * them knows a duration in milliseconds.
  *
+ * That 4s cycle is the rail's clock at rest. Inside the pinned hero on a desktop
+ * viewport the stylesheet takes the clock away — every one of those animations is
+ * set to `none` — and drives the same parts from `--hero-exit` instead, so the
+ * signal's single walk to CARE is the reader's own scroll rather than a loop
+ * running beside it. `--rail-at` is what both clocks share: it is a position, not
+ * a time, which is why neither had to be written twice.
+ *
+ * `.hero-drop` is the last of those stops' continuation: a short red line under
+ * CARE that extends as the signal arrives there, aimed at `.route-drop` at the
+ * top of Positioning and sitting at the same 87.5% of the shell, so the route
+ * appears to carry on into the network below rather than ending with the section.
+ *
  * Every resting state is still declared in the markup — line drawn, segment
  * complete, dot on CARE, all four stops lit. The animations only supply the way
  * in and the standing signal, so with `prefers-reduced-motion`, or with no JS and
@@ -53,8 +65,21 @@ const centre = (index: number) => STEP * index + STEP / 2;
  */
 const ARRIVE = [0, 0.28, 0.62, 0.96] as const;
 
-/** The stop's own position, handed to the CSS clock as `--rail-at`. */
-const at = (index: number) => ({ "--rail-at": ARRIVE[index] }) as CSSProperties;
+/**
+ * The stop's own position, handed to the CSS clock as `--rail-at`, plus whether it
+ * is lit before the signal has moved at all.
+ *
+ * Only REQUEST is. On a desktop frame the signal is driven by the scroll rather
+ * than by a loop (see `--rail-t` in globals.css), so at rest the run has not
+ * started — and a run that has not started is one that is standing on its first
+ * stop, not one with no stops lit. `--rail-on` is that floor, and it is zero
+ * everywhere else because those stages genuinely have not happened yet.
+ */
+const at = (index: number) =>
+  ({
+    "--rail-at": ARRIVE[index],
+    "--rail-on": index === 0 ? 1 : 0,
+  }) as CSSProperties;
 
 export function DispatchRail({
   align = "start",
@@ -73,7 +98,10 @@ export function DispatchRail({
   const span = centre(STAGES.length - 1) - first;
 
   return (
-    <section aria-labelledby="dispatch-rail-label" className={cn("hero-rail", className)}>
+    <section
+      aria-labelledby="dispatch-rail-label"
+      className={cn("hero-rail", className)}
+    >
       <p
         id="dispatch-rail-label"
         className={cn(
@@ -84,7 +112,10 @@ export function DispatchRail({
         {/* The live indicator: a red point with a soft halo around it, both static.
             The network is live, which is a state, not an event — a blinking light
             here would compete with the signal running the rail below it. */}
-        <span aria-hidden="true" className="relative flex h-[7px] w-[7px] shrink-0">
+        <span
+          aria-hidden="true"
+          className="relative flex h-[7px] w-[7px] shrink-0"
+        >
           <span className="absolute inset-0 rounded-full bg-red/25 blur-[1px]" />
           <span className="relative h-full w-full rounded-full bg-red" />
         </span>
@@ -108,6 +139,16 @@ export function DispatchRail({
             <span className="absolute left-0 top-1/2 block h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red shadow-[0_0_0_5px_rgba(237,28,36,0.2),0_0_14px_5px_rgba(237,28,36,0.4)]" />
           </span>
         </span>
+
+        {/* The route leaving the frame. As the signal settles on CARE the red line
+            turns down out of the hero and is picked up again at the top of the
+            band below, at this same offset in the same shell — one line crossing
+            the seam rather than two sections that happen to both have red in them.
+            It exists only where the hero is pinned; see `.hero-drop`. */}
+        <span
+          className="hero-drop absolute"
+          style={{ left: `${centre(STAGES.length - 1)}%` }}
+        />
 
         {STAGES.map((stage, index) => {
           const last = index === STAGES.length - 1;
@@ -134,7 +175,7 @@ export function DispatchRail({
               <span className="absolute left-0 top-0 block -translate-x-1/2 -translate-y-1/2">
                 <span
                   className={cn(
-                    "block h-[7px] w-[7px] rounded-full bg-red motion-safe:animate-node-in motion-safe:[animation-delay:var(--rail-moment)]",
+                    "rail-lit block h-[7px] w-[7px] rounded-full bg-red motion-safe:animate-node-in motion-safe:[animation-delay:var(--rail-moment)]",
                     // CARE is where the request comes to rest, so it keeps a soft
                     // static halo. A resting state, held — not a pulse.
                     last && "shadow-[0_0_0_6px_rgba(237,28,36,0.16)]",

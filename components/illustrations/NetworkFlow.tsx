@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/cn";
-import { onScroll, stilled, viewport } from "@/lib/motion";
+import {
+  clamp,
+  onPinned,
+  onScroll,
+  pinnedAt,
+  stilled,
+  viewport,
+} from "@/lib/motion";
 import type { FlowStage } from "@/data/site";
 
 /**
@@ -60,6 +67,29 @@ const FROM = 0.9;
 const TAIL = 0.42;
 
 /**
+ * The pinned track's own window: the share of it spent before the line starts and
+ * the share it is drawn over.
+ *
+ * The lead is the beat after the band settles under the header and before anything
+ * happens to it — a pinned section that starts moving on the same frame it stops
+ * moving reads as a glitch. The span closes well short of 1 so the finished
+ * network is held, complete and lit, for the last fifth of the track: the section
+ * gets to make its point before it is allowed to leave.
+ */
+const LEAD = 0.06;
+const DRAW = 0.78;
+
+/**
+ * Where the whole network comes up together, and where it lets go again.
+ *
+ * Hysteresis for the same reason `LOOP_OFF` has it: the flare is a state change,
+ * and a reader parked on the exact scroll position that triggers it must not be
+ * able to strobe the diagram by breathing on the trackpad.
+ */
+const FLARE_ON = 0.94;
+const FLARE_OFF = 0.86;
+
+/**
  * The loop lets go a little before the route does. Hysteresis, so a reader parked
  * at the exact scroll position where the route completes cannot flicker the
  * standing signal on and off a frame at a time by breathing on the trackpad.
@@ -73,43 +103,84 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
   const [reached, setReached] = useState(0);
   /** True once the route is complete: what mounts the standing signal. */
   const [loop, setLoop] = useState(false);
+  /** True for the beat at the end where every stage is lit at once. */
+  const [flare, setFlare] = useState(false);
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
 
     if (stilled()) {
-      // No appetite for motion: the schematic is simply complete, and the
-      // standing signal never mounts at all.
+      // No appetite for motion: the schematic is simply complete, every stage
+      // showing its status, and the standing signal never mounts at all.
       node.style.setProperty("--flow-draw", "1");
       setReached(stages.length);
+      setFlare(true);
       return;
     }
 
-    return onScroll(() => {
+    const track = node.closest<HTMLElement>(".pos-track");
+    const stage = node.closest<HTMLElement>(".pos-stage");
+
+    let pinned = false;
+    let off: (() => void) | null = null;
+
+    /** The band's own pass across the viewport: the unpinned reading. */
+    const passing = () => {
       const rect = node.getBoundingClientRect();
       const view = viewport();
       const span = rect.height + view * TAIL;
-      const draw = span > 0 ? Math.min(Math.max((view * FROM - rect.top) / span, 0), 1) : 0;
+      return span > 0 ? clamp((view * FROM - rect.top) / span) : 0;
+    };
 
-      // Straight to the element. This runs every frame the band is on screen, and
-      // the rail's clip is the one thing that has to move at that rate — putting
-      // it through React would re-render five stages and their labels sixty times
-      // a second to slide one edge.
-      node.style.setProperty("--flow-draw", draw.toFixed(4));
+    const stop = onPinned((on) => {
+      pinned = on && !!track && !!stage;
 
-      // These two are steps, not positions, so they cost a render only when they
-      // actually change: five times on the way down, five on the way back up.
-      setReached(draw <= 0 ? 0 : Math.min(Math.floor(draw * stages.length) + 1, stages.length));
-      setLoop((on) => (draw >= 1 ? true : draw < LOOP_OFF ? false : on));
+      off?.();
+      off = onScroll(() => {
+        const draw =
+          pinned && track && stage
+            ? clamp((pinnedAt(track, stage) - LEAD) / DRAW)
+            : passing();
+
+        // Straight to the element. This runs every frame the band is on screen,
+        // and the rail's clip is the one thing that has to move at that rate —
+        // putting it through React would re-render five stages and their labels
+        // sixty times a second to slide one edge.
+        node.style.setProperty("--flow-draw", draw.toFixed(4));
+
+        // These are steps, not positions, so they cost a render only when they
+        // actually change: a handful on the way down, the same on the way up.
+        setReached(
+          draw <= 0
+            ? 0
+            : Math.min(Math.floor(draw * stages.length) + 1, stages.length),
+        );
+        setFlare((on) =>
+          draw >= FLARE_ON ? true : draw < FLARE_OFF ? false : on,
+        );
+        setLoop((on) => (draw >= 1 ? true : draw < LOOP_OFF ? false : on));
+      });
     });
+
+    return () => {
+      stop();
+      off?.();
+    };
   }, [stages.length]);
 
   return (
-    <div ref={ref} className="flow relative">
+    <div
+      ref={ref}
+      data-flare={flare ? "true" : "false"}
+      className="flow relative"
+    >
       {/* Desktop rail. Spans node to node, so the line never dangles past the
           outer stages, and sits on the markers' own centre line. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-2 hidden h-px lg:block">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-2 hidden h-px lg:block"
+      >
         <span
           className="absolute inset-y-0 block"
           style={{ left: `${inset}%`, right: `${inset}%` }}
@@ -123,6 +194,17 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
               of air on every side: enough for the dot and its halo to sit whole on
               the first and last nodes, and nothing else. */}
           <span className="absolute -left-2 -top-2 block h-4 w-[calc(100%+1rem)] overflow-hidden">
+            {/* The signal on the route as it is being established: one red point
+                held at the drawing edge, so the line is not merely appearing —
+                something is travelling down it and leaving it behind. It carries
+                the same geometry as the standing signal below, transformed rather
+                than positioned so it costs no layout, and it is transparent at
+                both ends of the run: there is nothing on the rail before the route
+                starts and nothing parked on it once the route is finished. */}
+            <span className="flow-edge absolute inset-y-0 left-2 block w-[calc(100%-1rem)] motion-reduce:hidden">
+              <span className="absolute left-0 top-1/2 block h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red shadow-[0_0_0_4px_rgba(237,28,36,0.16),0_0_10px_3px_rgba(237,28,36,0.22)]" />
+            </span>
+
             {loop ? (
               <span className="flow-signal absolute inset-y-0 left-2 block w-[calc(100%-1rem)] motion-reduce:hidden">
                 <span className="absolute left-0 top-1/2 block h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red shadow-[0_0_0_4px_rgba(237,28,36,0.16),0_0_10px_3px_rgba(237,28,36,0.2)]" />
@@ -138,16 +220,37 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
           // The stage the drawing edge is standing on. Exactly one at a time, and
           // nothing at all once the route is finished — a schematic that keeps
           // pulsing after it is drawn is an alarm, not a diagram.
-          const active = lit && index === reached - 1 && reached < stages.length;
+          const active =
+            lit && index === reached - 1 && reached < stages.length;
+          /**
+           * What the stage is, in one word, for the stylesheet to read.
+           *
+           * `next` has not been drawn to. `current` is the one being described and
+           * is the only one showing its status line. `done` has been established
+           * and steps back — back, not away: its label holds at reading strength,
+           * because a route whose earlier stages become unreadable is not a
+           * diagram of anything. `full` is the closing beat where all five are
+           * current at once.
+           */
+          const state = !lit
+            ? "next"
+            : flare
+              ? "full"
+              : index === reached - 1
+                ? "current"
+                : "done";
           // Handed to the rings as a custom property: the cycle in globals.css turns
           // it into this node's share of the run, and nothing here knows a duration.
-          const at = { "--flow-at": along(index, stages.length).toFixed(4) } as CSSProperties;
+          const at = {
+            "--flow-at": along(index, stages.length).toFixed(4),
+          } as CSSProperties;
 
           return (
             <li
               key={stage.id}
               data-lit={lit ? "true" : "false"}
               data-active={active ? "true" : "false"}
+              data-state={state}
               className="flow-stage relative flex items-start gap-4 lg:flex-col lg:items-center lg:gap-0 lg:px-3 lg:text-center"
             >
               {/* The stacked rail, drawn one segment at a time so it ends exactly on
@@ -160,7 +263,10 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
                 />
               ) : null}
 
-              <span className="relative flex h-4 w-4 shrink-0 items-center justify-center" style={at}>
+              <span
+                className="relative flex h-4 w-4 shrink-0 items-center justify-center"
+                style={at}
+              >
                 {/* The stage acknowledging the route reaching it: one ring out, once,
                     as the drawing edge arrives. This is the entrance pulse and it is
                     separate from the standing loop's ring below — the two never run
@@ -230,7 +336,7 @@ export function NetworkFlow({ stages }: { stages: FlowStage[] }) {
                   >
                     {stage.label}
                   </p>
-                  <p className="mt-1.5 font-sans text-[0.625rem] uppercase leading-[1.5] tracking-[0.16em] text-muted">
+                  <p className="flow-status mt-1.5 font-sans text-[0.625rem] uppercase leading-[1.5] tracking-[0.16em] text-muted">
                     {stage.status}
                   </p>
                 </div>
