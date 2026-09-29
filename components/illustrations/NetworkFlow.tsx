@@ -70,23 +70,27 @@ const TAIL = 0.42;
  * The pinned track's own window: the share of it spent before the line starts and
  * the share it is drawn over.
  *
- * The lead is no longer just a beat of settling. The band now begins sticking a good
- * way *before* the hero's own clock has finished — it is lapped back far enough that
- * the third node is a stationary target for the ambulance being flown into it, which
- * is what `--pos-early` in globals.css buys — so the first tenth of this track is the
- * end of the hero's departure happening over the top of it: the ground turning to
- * paper, the drawing travelling down, the label and the statement arriving. 0.10 is
- * that overlap measured, not guessed. The hero's transition brief hands the route over
- * at 72% of the hero's clock, and 0.72 of the hero's travel lands at 0.102 of this one
- * at every desktop ratio from 1024×768 up, because both travels are the same linear
- * function of the viewport height.
+ * The lead is three quarters of the track, and all of it is occupied. The band now
+ * reads its statement out before it draws its route: the hero's departure finishes
+ * over the top of the first eighth, the sentence is revealed a phrase at a time to
+ * 0.65, and the rule under it draws across while the statement settles to full ink.
+ * Only then does the route start. Handing the reader a sentence and a schematic
+ * animating at once was asking them to watch two things and read a third.
  *
- * The span still closes well short of 1 so the finished network is held, complete and
- * lit, for the last fifth of the track: the section gets to make its point before it
- * is allowed to leave.
+ * The band still begins sticking a good way *before* the hero's own clock has
+ * finished — it is lapped back far enough that the third node is a stationary target
+ * for the ambulance being flown into it, which is what `--pos-early` in globals.css
+ * buys. The hero hands the route over at 72% of its clock, which lands at 0.056 of
+ * this one, and the hero is entirely gone by 0.121; both are comfortably inside the
+ * lead at every desktop ratio from 1024×768 up, because both travels are the same
+ * linear function of the viewport height.
+ *
+ * The span still closes short of 1 so the finished network is held, complete and lit,
+ * while the section releases: the route gets to be finished before About arrives on
+ * top of it.
  */
-const LEAD = 0.1;
-const DRAW = 0.72;
+const LEAD = 0.75;
+const DRAW = 0.2;
 
 /**
  * Where the whole network comes up together, and where it lets go again.

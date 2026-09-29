@@ -1,7 +1,8 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SignalRail } from "@/components/ui/Section";
 import { NetworkFlow } from "@/components/illustrations/NetworkFlow";
-import { networkFlow, positioning } from "@/data/site";
+import { PositioningStatement } from "@/components/site/PositioningStatement";
+import { networkFlow } from "@/data/site";
 
 /**
  * The positioning statement carries the whole argument of the page, so it is set
@@ -24,14 +25,20 @@ import { networkFlow, positioning } from "@/data/site";
  * them. The section's own box stays where it was — the lap is on the track, not on
  * the section — so the journey tracker still finds station 01 at a sane offset.
  *
- * The statement and the schematic hold under the header while a ~240vh track
- * scrolls past them, and that scroll is
- * what routes the network: the line draws, the five stages come on in order with
- * their status revealed as each is reached, and the band lets go once the route is
- * complete. `NetworkFlow` reads the track it is standing in and needs nothing
- * passed to it, so this stays a server component; below `lg`, and for a reader who
- * has asked for less motion, `.pos-track` and `.pos-stage` have no rules at all and
- * the band is exactly the band it has always been.
+ * The statement and the schematic hold under the header while a 400vh track scrolls
+ * past them, and that scroll does two things in order. First it reads the statement
+ * out: the sentence is on screen whole from the first frame in a muted warm grey, and
+ * the scroll walks a full-contrast copy of it across a phrase at a time, left to
+ * right. Then — with a beat in between where the rule draws across and the
+ * schematic's label arrives, so no part of the track is standing still — it routes
+ * the network: the line draws, the five stages come on in order with their status
+ * revealed as each is reached, and the band lets go once the route is complete.
+ *
+ * `NetworkFlow` and `PositioningStatement` both read the track they are standing in
+ * and need nothing passed to them, so this stays a server component; below `lg`, and
+ * for a reader who has asked for less motion, `.pos-track` and `.pos-stage` have no
+ * rules at all, the reveal never subscribes, and the band is exactly the band it has
+ * always been — one paragraph, complete and readable, fading in once.
  */
 export function Positioning() {
   return (
@@ -54,19 +61,26 @@ export function Positioning() {
                   arrives a beat behind the label it sits under, and the class is
                   what the pinned reveal is written against. It has to be on the
                   paragraph rather than on the `Reveal` wrapper, which owns its own
-                  opacity and transform for the unpinned page. */}
-              <p className="pos-line mt-8 max-w-[52ch] font-serif text-[1.65rem] leading-[1.24] tracking-[-0.015em] text-ink sm:text-[2.2rem] lg:text-[2.75rem]">
-                {positioning}
-              </p>
+                  opacity and transform for the unpinned page.
+
+                  The paragraph itself is a client component now, because on a
+                  desktop frame the scroll reads it out phrase by phrase — the copy,
+                  the type and the measure are untouched, and every other width gets
+                  this same element as the plain paragraph it has always been. */}
+              <PositioningStatement className="pos-line mt-8 max-w-[52ch] font-serif text-[1.65rem] leading-[1.24] tracking-[-0.015em] text-ink sm:text-[2.2rem] lg:text-[2.75rem]" />
             </Reveal>
 
+            {/* The rule between the statement and the schematic. On the pinned band
+                it is drawn rather than simply present: it is what carries the beat
+                between the sentence finishing and the route starting, so there is no
+                stretch of the track where nothing at all is moving. */}
             <div
               aria-hidden="true"
-              className="mt-10 h-px w-full bg-paper-line lg:mt-12"
+              className="pos-rule mt-10 h-px w-full bg-paper-line lg:mt-12"
             />
 
             <Reveal delay={60}>
-              <div className="mt-7 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+              <div className="pos-cue mt-7 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                 <p className="op-label">
                   <span>MEDURUN Emergency Network</span>
                 </p>

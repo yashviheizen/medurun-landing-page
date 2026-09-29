@@ -68,8 +68,47 @@ export const hero = {
   },
 } as const;
 
-export const positioning =
-  "MEDURUN is India's next-generation digital healthcare mobility platform connecting patients, hospitals, ambulance providers, medical agencies, and emergency response teams through a seamless technology-driven ecosystem.";
+/**
+ * One run of the positioning statement: a stretch of the sentence, and whether it
+ * is one of the few phrases the page says in red.
+ */
+export type PositioningRun = { text: string; accent?: boolean };
+
+/**
+ * The positioning statement, written as the four phrases it is actually read in
+ * rather than as one string, because the pinned band reveals it a phrase at a
+ * time and a reveal split at render time would be splitting on whitespace and
+ * hoping. The breaks are the sentence's own clauses — who MEDURUN is, who it
+ * connects, who else it connects, and what through — so the reader is handed a
+ * complete thought at each step instead of a line ending wherever the column did.
+ *
+ * `accent` is the red, and it is spent on three phrases only: what the platform
+ * is, the verb the whole sentence turns on, and what it amounts to. A statement
+ * set entirely in the brand colour is not emphasising anything.
+ *
+ * `positioning` below is these joined, so the copy has exactly one source and the
+ * split can never drift away from the sentence it is splitting.
+ */
+export const positioningPhrases: PositioningRun[][] = [
+  [
+    { text: "MEDURUN is India's " },
+    { text: "next-generation", accent: true },
+    { text: " digital healthcare mobility platform" },
+  ],
+  [
+    { text: "connecting", accent: true },
+    { text: " patients, hospitals, ambulance providers," },
+  ],
+  [{ text: "medical agencies, and emergency response teams" }],
+  [
+    { text: "through a " },
+    { text: "seamless technology-driven ecosystem.", accent: true },
+  ],
+];
+
+export const positioning = positioningPhrases
+  .map((phrase) => phrase.map((run) => run.text).join(""))
+  .join(" ");
 
 /**
  * One stage of the emergency network, read left to right: what is handed from one

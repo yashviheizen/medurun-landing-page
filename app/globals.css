@@ -196,14 +196,83 @@
     will-change: transform;
   }
 
-  /* The About plate drifts by a share of its own height rather than a fixed number
-     of pixels — it is the widest frame on the page and a 10px travel that reads as
-     depth on a service card reads as nothing across a 21:9 plate — so its overscale
-     is its own too. Same rule otherwise: the scale is the crop and everybody gets
-     it, the shift is the motion and only some do. */
-  .plate-shift {
-    transform: translate3d(0, var(--shift, 0px), 0) scale(1.05);
-    will-change: transform;
+  /* ---------------------------------------------------------------------------
+     About: one photograph, its two statements, and the vision and mission.
+
+     Everything here is the stacked reading — phones, tablets, reduced motion, and
+     no scripting at all: a heading, a full-width photograph, its caption, the two
+     paragraphs, then the vision and the mission, in that order. The crop, the pan,
+     the bridging line and the panel float are all declared in the pinned block
+     near the end of this file, so a reader who is not being given the sequence is
+     never left holding a piece of one either.
+     --------------------------------------------------------------------------- */
+  .ab-figure {
+    display: block;
+    margin-top: 2.25rem;
+  }
+
+  .ab-frame {
+    position: relative;
+  }
+
+  /* The caption follows the photograph rather than arriving with it. */
+  .ab-caption {
+    margin-top: 0.75rem;
+  }
+
+  .ab-says {
+    margin-top: 2rem;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .ab-say {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #5b6172;
+  }
+
+  /* The bridge is a reading of one composition — two statements facing each other
+     across a gap — and there is no gap to bridge until the pinned layout puts them
+     on opposite sides of the frame. Stacked, the paragraphs simply follow one
+     another, and a hairline between them would be a rule rather than a bridge. */
+  .ab-bridge {
+    display: none;
+  }
+
+  .ab-panels {
+    margin-top: 2rem;
+    display: grid;
+    gap: 1.75rem;
+  }
+
+  .ab-panel {
+    border-top: 1px solid #e4e6ed;
+    padding-top: 1rem;
+  }
+
+  .ab-panel-body {
+    font-size: 0.98rem;
+  }
+
+  @media (min-width: 640px) {
+    .ab-figure {
+      margin-top: 2.75rem;
+    }
+
+    .ab-say {
+      font-size: 1.125rem;
+    }
+
+    .ab-says {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 2rem;
+    }
+
+    .ab-panels {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 2.25rem;
+    }
   }
 
   /* Voices carousel. The track is a native scroll container, so swipe, trackpad,
@@ -1298,15 +1367,6 @@
     transform: translateY(20px);
   }
 
-  /* The plate's caption follows the photograph rather than arriving with it. */
-  .plate-caption {
-    transition: opacity 0.42s ease-out 0.42s;
-  }
-
-  .js .plate[data-run="false"] .plate-caption {
-    opacity: 0;
-  }
-
   /* One line of operational metadata, read left to right. Delays are inline. */
   /* A subordinate metadata line, moved as one group rather than label by label.
      Its travel is deliberately short of the 28px the headline and body get: it is
@@ -1370,6 +1430,32 @@
      the plain flow-and-fade page they got before, in its completed state, with no
      stilled version of a sequence to maintain.
      =========================================================================== */
+
+  /* The positioning statement's own pieces, everywhere.
+
+     This is the whole of what a phone, a tablet, a reader who has asked for less
+     motion and a reader with no JavaScript get: four phrases flowing inline as one
+     ordinary paragraph, three of them carrying the page's red, and the revealed
+     duplicate not rendered at all. The statement is complete and at full contrast
+     the moment `Reveal` fades it up, which is the simple fade-in the brief asks for
+     at those widths — there is no stilled copy of the sequence to keep in step,
+     because the sequence does not exist there. */
+  .pos-phrase {
+    display: inline;
+  }
+
+  /* The three phrases the sentence turns on. Red is spent here and nowhere else in
+     the statement: a manifesto set entirely in the brand colour emphasises nothing. */
+  .pos-em {
+    color: #ed1c24;
+  }
+
+  /* The revealed layer is a device of the pinned band and of nothing else. It is a
+     second copy of the same words, so anywhere the reveal does not run it must not
+     be in the document's flow, in the page's text, or in anybody's way. */
+  .pos-lit {
+    display: none;
+  }
 
   /* Off everywhere by default: the thread that runs out of the ambulance into its
      node only means something while the hero is pinned and the ambulance has been
@@ -1922,20 +2008,32 @@
   }
 
   /* ---------------------------------------------------------------------------
-     2. The sticky Positioning network.
+     2. The sticky Positioning statement, and then its network.
 
-     240vh — a screen and a bit more than a screen of scroll for five stages, so
-     each one gets a little over a quarter screen. Longer than the hero because
-     there is something to read at every stage here, and `NetworkFlow` maps 0.10 to
-     0.82 of it to drawing the line: the first tenth is the tail of the hero's own
-     transition happening over the top of this band — which begins sticking before
-     that transition finishes, see `--pos-early` — and the last fifth is the finished
-     network held lit while the section releases, so About does not arrive on top of
-     the schematic completing.
+     400vh, and the band now does two things with it in a fixed order: it reads its
+     sentence out, and then it draws its route. The whole argument of the page is in
+     that sentence, and running a five-stage schematic underneath while it is still
+     being read was asking for two things to be watched and a third to be read.
+
+     The track's own clock, in the shares the brief sets out. Roughly a screen of
+     travel is 0.33 of it.
+
+       0    – 0.15   the label and the statement arrive. This is the tail of the
+                      hero's departure happening over the top of this band, which
+                      begins sticking before that transition finishes — see
+                      `--pos-early`. The hero hands the route over at 0.056 and is
+                      gone by 0.121, both comfortably inside the window.
+       0.15 – 0.65   the statement, revealed a phrase at a time, left to right.
+       0.65 – 0.75   it settles to full ink while the rule under it draws across and
+                      the network's label arrives — the handover beat, so there is no
+                      stretch of the track with nothing moving in it.
+       0.75 – 0.95   `NetworkFlow` draws the route and lights the five stages.
+       0.95 – 1      the finished network held lit while the section releases, so
+                      About does not arrive on top of the schematic completing.
      --------------------------------------------------------------------------- */
   @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
     .pos-track {
-      height: 240vh;
+      height: 400vh;
 
       /* The band has to be behind the hero to be revealed from under it, so it is
          lapped back by one pinned hero screen and then some. Two numbers, and they
@@ -2034,6 +2132,132 @@
       --pos-line-in: clamp(0, calc((var(--hero-exit) - 0.62) / 0.14), 1);
       opacity: var(--pos-line-in);
       translate: 0 calc((1 - var(--pos-line-in)) * 14px);
+    }
+
+    /* -------------------------------------------------------------------------
+       The statement, read out.
+
+       The sentence is whole and readable from the first frame — muted warm grey on
+       warm paper — and what the scroll moves across it is colour, not letters.
+       Each phrase carries its own progress in `--p`, written once a frame by
+       `PositioningStatement`, and three properties read it: the clip that walks the
+       ink copy across from the left, a blur that resolves as the phrase is reached,
+       and a twelve-pixel lift that settles at the same time. A phrase that has been
+       passed is simply left at 1 — there is no hand-back and no dimming behind the
+       edge, because a sentence whose first half fades as its second half arrives is
+       a sentence nobody gets to finish.
+
+       `--pos-under` and `--pos-over` are written as whole colours rather than
+       interpolated here: the settle takes the grey layer to the same ink as the
+       layer over it, and a `color-mix` per phrase per frame would be four mixes to
+       do what two substitutions already do.
+
+       Both are declared on the stage, which is where the component writes them, so
+       the rule and the cue below can read the same clock as the paragraph without a
+       second subscriber. */
+    .js .pos-track .pos-stage {
+      --pos-under: #8c8378;
+      --pos-over: #101b3c;
+    }
+
+    .js .pos-track .pos-line {
+      color: var(--pos-under);
+    }
+
+    /* One phrase, one line — at every width the reveal runs at.
+
+       The reveal's unit is the phrase and the clip that walks across it resolves in
+       the phrase's own box, so a phrase that has wrapped is two lines swept by a
+       single vertical edge: the end of the clause arrives before the middle of it.
+       The longest of the four needs about twenty-four times its own size of measure,
+       which the authored 2.75rem has everywhere from roughly 1150px up and nowhere
+       below it. So under that the statement is set to the column it has rather than
+       to a size the column cannot hold — `min()` makes this a no-op at every width
+       where the authored size already fits, which is nearly every desktop, and none
+       of it exists below `lg` or under reduced motion, where the paragraph wraps
+       exactly as it always has. */
+    .js .pos-track .pos-line {
+      font-size: min(2.75rem, calc(4vw - 4px));
+    }
+
+    /* Block, so the phrase is the unit the clip sweeps across and the overlay has a
+       box to match. The paragraph's own measure and leading are untouched, so what
+       this changes about the layout is only where the sentence is allowed to break:
+       at its four clauses rather than wherever the column ran out.
+
+       No transition anywhere in here. `--p` is already being written once a frame,
+       and a transition on top of it is a second, slower animation chasing the first
+       — the reveal would lag the reader's thumb and keep going after they stopped,
+       which is also what would stop reverse scrolling from being exact. */
+    .js .pos-line .pos-phrase {
+      position: relative;
+      display: block;
+      filter: blur(calc((1 - var(--p, 0)) * 2.2px));
+      transform: translate3d(0, calc((1 - var(--p, 0)) * 12px), 0);
+      transition: none;
+      will-change: filter, transform;
+    }
+
+    /* Under the reveal the whole sentence is one colour, red included: the accent is
+       something the phrase is given as it is reached, not something showing through
+       the grey before it. */
+    .js .pos-line .pos-phrase .pos-em {
+      color: inherit;
+    }
+
+    /* The revealed copy, exactly over the muted one: same box, same measure, same
+       font, so it wraps line for line without being told to. The clip resolves in
+       this element's own coordinates and the transform that moves the phrase is on
+       its parent, which is what keeps the mask edge still while the phrase lifts. */
+    .js .pos-line .pos-phrase .pos-lit {
+      position: absolute;
+      inset: 0;
+      display: block;
+      color: var(--pos-over);
+      clip-path: inset(0 calc(100% - 100% * var(--p, 0)) 0 0);
+      pointer-events: none;
+      transition: none;
+      will-change: clip-path;
+    }
+
+    .js .pos-line .pos-phrase .pos-lit .pos-em {
+      color: #ed1c24;
+    }
+
+    .js .pos-line .pos-phrase[data-i="0"] {
+      --p: var(--pos-p0, 0);
+    }
+
+    .js .pos-line .pos-phrase[data-i="1"] {
+      --p: var(--pos-p1, 0);
+    }
+
+    .js .pos-line .pos-phrase[data-i="2"] {
+      --p: var(--pos-p2, 0);
+    }
+
+    .js .pos-line .pos-phrase[data-i="3"] {
+      --p: var(--pos-p3, 0);
+    }
+
+    /* The handover beat. The statement stops being revealed at 0.65 and the route
+       does not start until 0.75, and ten hundredths of a 400vh track is a third of a
+       screen: long enough that a band holding perfectly still across it would read as
+       the page having stalled. So the rule draws itself across and the network's own
+       label comes up, in that order — the sentence is finished, a line is ruled under
+       it, the schematic is announced, and the route leaves on the next frame. */
+    .js .pos-track .pos-rule {
+      transform: scaleX(var(--pos-settle, 0));
+      transform-origin: left center;
+      transition: none;
+      will-change: transform;
+    }
+
+    .js .pos-track .pos-cue {
+      opacity: var(--pos-settle, 0);
+      transform: translate3d(0, calc((1 - var(--pos-settle, 0)) * 8px), 0);
+      transition: none;
+      will-change: opacity, transform;
     }
 
     /* `--flow-draw` is written every frame, so the edge needs no transition: it
@@ -3404,6 +3628,279 @@
   .journey[data-still="true"] .journey-unit {
     filter: drop-shadow(0 1px 2px rgba(10, 17, 41, 0.3));
   }
+
+  /* ---------------------------------------------------------------------------
+     About, pinned. Desktop, motion allowed.
+
+     The shortest of the page's pinned sequences on purpose — 180vh, so roughly
+     80vh of scroll owns the whole thing — and the one with a single large gesture
+     in it rather than a walk through a list. Two clocks drive it, and `AboutStage`
+     explains why there are two: the headline and the photograph's arrival ride the
+     track's approach up the screen, because by the time the stage actually sticks
+     the heading has been in plain sight for most of a viewport; the opening of the
+     crop, the two statements, the line between them and the two panels ride the
+     stage's own progress.
+
+     The last stretch of the sequence is the section's ordinary composition — the
+     frame at the full content width, the panels resting on its lower edge, the
+     statements beneath — so the release is the stage simply stopping being held.
+     There is no final animation to get wrong, and nothing to unwind.
+
+     Every row of the stage is placed explicitly. `.ab-panels` shares the frame's
+     row so it can rest on the photograph, and a grid with one explicitly placed
+     item would otherwise push the auto-placed rows past it.
+     --------------------------------------------------------------------------- */
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .js .ab-track {
+      height: 180vh;
+    }
+
+    .js .ab-stage {
+      position: sticky;
+      top: var(--header-h);
+      min-height: calc(100vh - var(--header-h));
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      padding-block: clamp(1.25rem, 3.6vh, 2.25rem);
+      isolation: isolate;
+
+      /* The slice the photograph is introduced in: narrow enough to read as a
+         vertical crop against a 1248px column, wide enough to still be a picture
+         of something. */
+      --ab-w0: clamp(11rem, 16vw, 15.5rem);
+    }
+
+    /* One figure, two rows of it. `display: contents` is the whole reason the
+       photograph and its caption can be separate rows of the stage grid without
+       the markup giving up on saying that they are one figure. */
+    .js .ab-figure {
+      display: contents;
+    }
+
+    .js .ab-stage .ab-head {
+      grid-row: 1;
+      grid-column: 1;
+    }
+
+    /* ---- The headline, a line at a time ---------------------------------- */
+
+    .js .ab-head .ab-line {
+      display: block;
+      transition: none;
+    }
+
+    .js .ab-head .ab-line[data-i="0"] {
+      opacity: var(--ab-l1, 0);
+      transform: translate3d(0, calc((1 - var(--ab-l1, 0)) * 18px), 0);
+    }
+
+    .js .ab-head .ab-line[data-i="1"] {
+      opacity: var(--ab-l2, 0);
+      transform: translate3d(0, calc((1 - var(--ab-l2, 0)) * 18px), 0);
+    }
+
+    /* ---- The frame, opening sideways ------------------------------------- */
+
+    .js .ab-stage .ab-frame {
+      grid-row: 2;
+      grid-column: 1;
+      position: relative;
+      min-height: 0;
+      margin-top: clamp(1rem, 2.6vh, 1.75rem);
+    }
+
+    /* The window. The slice opens from the centre outwards: the inset on each side
+       is half of however much wider the frame is than the slice, taken back to
+       nothing as `--ab-open` runs. A mask rather than a width, so the photograph
+       inside never moves or squashes — the frame is uncovered, which is the same
+       language every other plate on this page arrives in.
+
+       Four classes deep on purpose. `ImageReveal` writes a `clip-path` of its own
+       on this element for the stacked layout's entrance, and this has to be the
+       rule that wins without either of them reaching for `!important`. */
+    .js .ab-stage .ab-figure .ab-crop {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      clip-path: inset(
+        0 calc((100% - var(--ab-w0)) / 2 * (1 - var(--ab-open, 0))) 0
+          calc((100% - var(--ab-w0)) / 2 * (1 - var(--ab-open, 0)))
+      );
+      opacity: var(--ab-shot, 0);
+      transform: none;
+      transition: none;
+      will-change: clip-path, opacity;
+    }
+
+    /* The 1.04 → 1 settle and the pan, on their own element: `clip-path` resolves
+       in the box's own coordinates, so a transform on the clipped element would
+       drag the mask's edge along with the picture and the slice would zoom instead
+       of opening. */
+    .js .ab-stage .ab-zoom {
+      position: absolute;
+      inset: 0;
+      transform: translate3d(var(--ab-pan, 0%), 0, 0) scale(var(--ab-scale, 1));
+      transform-origin: 50% 50%;
+      transition: none;
+      will-change: transform;
+    }
+
+    /* The photograph fills the row the stage gives it rather than holding the
+       plate's authored ratio: what it has to fit inside here is a band of a
+       screen, not a column of a page. */
+    .js .ab-stage .ab-zoom > * {
+      height: 100%;
+      aspect-ratio: auto;
+    }
+
+    .js .ab-stage .ab-caption {
+      grid-row: 3;
+      grid-column: 1;
+      margin-top: clamp(0.5rem, 1.2vh, 0.8rem);
+      opacity: var(--ab-shot, 0);
+      transition: none;
+    }
+
+    /* ---- The two statements, and the line between them -------------------- */
+
+    .js .ab-stage .ab-says {
+      grid-row: 4;
+      grid-column: 1;
+      margin-top: clamp(0.9rem, 2.2vh, 1.6rem);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(3.5rem, 11vw, 10rem) minmax(0, 1fr);
+      align-items: start;
+      gap: clamp(1rem, 2.2vw, 2rem);
+    }
+
+    /* Both statements stay ranged left. Facing each other across the line is the
+       composition; ragging one of them the other way to complete the symmetry
+       would cost five lines of readability to buy it. */
+    .js .ab-stage .ab-says .ab-say {
+      max-width: 42ch;
+      font-size: clamp(0.9rem, 1.05vw, 1rem);
+      line-height: 1.62;
+      opacity: var(--ab-says, 0);
+      transition: none;
+    }
+
+    .js .ab-stage .ab-says .ab-say[data-side="left"] {
+      transform: translate3d(calc((1 - var(--ab-says, 0)) * -26px), 0, 0);
+    }
+
+    .js .ab-stage .ab-says .ab-say[data-side="right"] {
+      justify-self: end;
+      transform: translate3d(calc((1 - var(--ab-says, 0)) * 26px), 0, 0);
+    }
+
+    /* Two endpoints and the hairline between them, drawn outwards from its own
+       centre as the statements settle — so what is read is one line reaching both
+       of them rather than a rule that was there all along. */
+    .js .ab-stage .ab-says .ab-bridge {
+      display: flex;
+      align-items: center;
+      align-self: start;
+      margin-top: 0.62rem;
+      opacity: var(--ab-bridge, 0);
+      transition: none;
+    }
+
+    .js .ab-stage .ab-bridge-line {
+      flex: 1 1 auto;
+      height: 1px;
+      background-color: #ed1c24;
+      transform: scaleX(var(--ab-bridge, 0));
+      transform-origin: 50% 50%;
+    }
+
+    .js .ab-stage .ab-bridge-dot {
+      flex: none;
+      width: 4px;
+      height: 4px;
+      border-radius: 9999px;
+      background-color: #ed1c24;
+      transform: scale(var(--ab-bridge, 0));
+    }
+
+    /* ---- Vision and mission, resting on the frame's lower edge ----------- */
+
+    /* Placed into the frame's own grid row rather than nested inside it: the
+       panels are a layer on the photograph, and one grid cell two things share
+       says that more plainly than an absolutely positioned child of a figure. */
+    .js .ab-stage .ab-panels {
+      grid-row: 2;
+      grid-column: 1;
+      align-self: end;
+      z-index: 2;
+      margin: 0 clamp(0.75rem, 1.8vw, 1.5rem) clamp(0.75rem, 1.8vh, 1.35rem);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.7rem, 1.6vw, 1.15rem);
+      pointer-events: none;
+    }
+
+    /* Glass, restrained: paper at four fifths over the photograph so the ink on it
+       is read rather than deciphered, one hairline of a border, and a shadow that
+       is there to separate the panel from the picture and nothing else. */
+    .js .ab-stage .ab-panel {
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 7px;
+      padding: clamp(0.6rem, 1.3vh, 0.9rem) clamp(0.8rem, 1.5vw, 1.1rem);
+      max-width: 34rem;
+      background-color: rgba(245, 242, 238, 0.82);
+      -webkit-backdrop-filter: blur(10px) saturate(1.08);
+      backdrop-filter: blur(10px) saturate(1.08);
+      box-shadow: 0 12px 30px -20px rgba(10, 17, 41, 0.55);
+      transition: none;
+    }
+
+    .js .ab-stage .ab-panel[data-i="0"] {
+      opacity: var(--ab-panel-a, 0);
+      transform: translate3d(0, calc((1 - var(--ab-panel-a, 0)) * 20px), 0);
+    }
+
+    .js .ab-stage .ab-panel[data-i="1"] {
+      justify-self: end;
+      opacity: var(--ab-panel-b, 0);
+      transform: translate3d(0, calc((1 - var(--ab-panel-b, 0)) * 20px), 0);
+    }
+
+    .js .ab-stage .ab-panel-body {
+      font-size: clamp(0.82rem, 0.95vw, 0.92rem);
+      line-height: 1.55;
+    }
+  }
+
+  /* A laptop whose screen is shorter than it is wide by a long way. The heading and
+     the two bands under the frame each give up a little so the frame stays a
+     cinematic band rather than a letterbox slot. */
+  @media (min-width: 1024px) and (max-height: 820px) and (prefers-reduced-motion: no-preference) {
+    .js .ab-stage {
+      padding-block: clamp(0.85rem, 2.4vh, 1.4rem);
+    }
+
+    .js .ab-head h2 {
+      font-size: 2.5rem;
+    }
+
+    .js .ab-stage .ab-frame {
+      margin-top: clamp(0.7rem, 1.8vh, 1.1rem);
+    }
+
+    .js .ab-stage .ab-says {
+      grid-row: 4;
+      margin-top: clamp(0.7rem, 1.6vh, 1.1rem);
+    }
+
+    .js .ab-stage .ab-says .ab-say {
+      font-size: 0.86rem;
+      line-height: 1.55;
+    }
+
+    .js .ab-stage .ab-panel-body {
+      font-size: 0.84rem;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3430,8 +3927,7 @@
   .js .reveal[data-visible="false"] .stagger-up,
   .js .reveal[data-visible="false"] .voices-in,
   .js .flow-stage[data-lit="false"] .flow-node,
-  .js .flow-stage[data-lit="false"] .flow-label,
-  .js .plate[data-run="false"] .plate-caption {
+  .js .flow-stage[data-lit="false"] .flow-label {
     opacity: 1;
     transform: none;
   }
@@ -3484,8 +3980,7 @@
      framing every other reader is looking at. `ParallaxLayer` never writes
      `--shift` under this preference, but naming it here means the plates are
      still correct if a reader turns the preference on mid-session. */
-  .media-shift,
-  .plate-shift {
+  .media-shift {
     --shift: 0px;
   }
 
