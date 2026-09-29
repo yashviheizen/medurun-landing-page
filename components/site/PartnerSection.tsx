@@ -63,13 +63,26 @@ export function PartnerSection({
   content,
   imageSide = "right",
   tone = "light",
+  className,
+  labelledBy,
+  children,
 }: {
-  id: string;
+  id?: string;
   /** Station number on the page's signal line, e.g. "04". */
   index?: string;
   content: PartnerContent;
   imageSide?: "left" | "right";
   tone?: "light" | "dark";
+  /**
+   * Hooks for the pinned partner story, which stacks the two bands in one sticky
+   * stage. The band itself does not know it is in a sequence: it is handed a class
+   * and keeps rendering exactly what it renders anywhere else.
+   */
+  className?: string;
+  /** Names the band when the anchor id sits on a marker outside it. */
+  labelledBy?: string;
+  /** A layer behind the band's column — the partner story's line of oversized type. */
+  children?: React.ReactNode;
 }) {
   const dark = tone === "dark";
   const left = imageSide === "left";
@@ -77,9 +90,11 @@ export function PartnerSection({
   return (
     <section
       id={id}
+      aria-labelledby={labelledBy}
       className={cn(
         "relative overflow-hidden py-16 sm:py-20 lg:py-24",
         dark ? "on-dark bg-navy-ink text-white" : "bg-white text-ink",
+        className,
       )}
     >
       <div
@@ -90,6 +105,7 @@ export function PartnerSection({
         )}
       />
       <SignalRail tone={dark ? "dark" : "light"} />
+      {children}
 
       <div className="shell relative grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-x-12 lg:gap-y-0">
         {/* `items`: the column's own lines carry the entrance, so the label, the
@@ -104,6 +120,7 @@ export function PartnerSection({
           </p>
 
           <h2
+            id={labelledBy}
             style={{ transitionDelay: `${LINE_STEP}ms` }}
             className={cn(
               "stagger-up mt-6 text-[2rem] leading-[1.08] sm:text-[2.5rem] lg:text-[2.85rem]",
@@ -194,7 +211,7 @@ export function PartnerSection({
             left ? "lg:col-start-1 lg:row-start-1" : "lg:col-start-7 lg:-mr-10 xl:-mr-14",
           )}
         >
-          <figure className="relative">
+          <figure className="pt-fig relative">
             {/* Both plates open the same way — uncovered from the top edge as they
                 rise — rather than mirroring each other left and right. The two
                 bands sit one above the other on the page, so a reader meets them

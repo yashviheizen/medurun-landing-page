@@ -1060,58 +1060,6 @@
     display: flex;
   }
 
-  /* Network principles band. The four cards arrive once, a beat apart, on the
-     band's own observer; the scroll sweep is a separate thing and only moves the
-     indicator. Scoped to `.js` in the same way as `.reveal` — with no JS there is
-     nothing to un-hide them, so they must render fully legible.
-
-     This hidden state is deeper than the 0.85 the sweep used to dim to, and it
-     can be: it is an entrance rather than an emphasis. A card is only ever in it
-     before it has been reached, so nothing a reader is looking at is ever held at
-     a quarter strength — where the old sweep-driven version dimmed cards the
-     reader had already scrolled back to. */
-  .principle {
-    transition:
-      opacity 0.62s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .js .principle[data-revealed="false"] {
-    opacity: 0.25;
-    transform: translateY(26px);
-  }
-
-  /* The band's one indicator. It slides along the top line to the principle being
-     read — pointed at, focused, or reached by the scroll position — rather than
-     filling across the band, so the line reports a position instead of a total. */
-  .principle-mark {
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  /* Each principle's accent, drawn from its left edge as the sweep reaches it.
-     `scaleX` rather than a width transition because this is a solid 1px rule, not
-     a dashed one: there is no pattern to stretch, and scaling a solid line along
-     its own axis is the cheapest way to draw it — one compositor property, no
-     layout on any of the 800ms it takes.
-
-     The drawn-from-nothing state is scoped to `.js`, so with no JavaScript all
-     four accents render at their full width alongside the text they underline. */
-  .principle-accent {
-    transform-origin: left center;
-    opacity: 0.45;
-    transition:
-      transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 0.4s ease-out;
-  }
-
-  .principle-accent[data-current="true"] {
-    opacity: 1;
-  }
-
-  .js .principle[data-revealed="false"] .principle-accent {
-    transform: scaleX(0);
-  }
-
   /* ---------------------------------------------------------------------------
      The positioning schematic, routed once.
 
@@ -2359,191 +2307,430 @@
   }
 
   /* ---------------------------------------------------------------------------
-     3. The Why MEDURUN stack.
+     3. Why MEDURUN: four principles as one horizontal journey.
 
-     The four-column rule becomes one pile. 250vh of track gives each card about
-     two thirds of a screen to arrive in, which at `--why-step` apart leaves the
-     number and the title of every covered card showing — the stack is meant to
-     read as four things one of which is open, not as a card with three shadows.
+     The geometry is the whole trick and it is one identity. `.wy-run` is exactly
+     as wide as the rail, and each card is `(100% - 2 * gap) / 1.34` of it. Centre
+     a card and the clear space either side is `(rail - card) / 2`, so the sliver
+     of the next card showing past the gap is `(rail - card) / 2 - gap` — which
+     that 1.34 makes precisely 0.17 of a card. The "15-20% of the next card"
+     the brief asks for is therefore not a number anyone tuned; it falls out of
+     the divisor and holds at every viewport width.
 
-     Scoped to `.js` throughout, and that is load-bearing twice over. It buys the
-     specificity to override the Tailwind column utilities on `.principle`
-     (`lg:px-7`, `lg:first:pl-0` and the rest are single-class selectors in a
-     later layer, so a two-class rule here would lose the tie). And it is correct:
-     with no JavaScript `--why-t` is never written, so the pile would sit frozen
-     at its first frame. No JS, no stack — the four cards stay a grid.
+     Four cards and three gaps are wider than the run, so they overflow it and the
+     rail clips them — see the `overflow-x` note on `.js .wy-rail` below.
+
+     Everything under `.js` and the pin is scrubbed, so nothing in here carries a
+     transition. Everything above it is the fallback that four different readers
+     get — phone, tablet, reduced motion, no JavaScript — and it is a native
+     scroll-snap carousel with all four cards fully legible.
      --------------------------------------------------------------------------- */
-  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-    .why-track {
-      height: 250vh;
+
+  .wy-rail {
+    margin-top: 2.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .wy-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .wy-run {
+    --wy-gap: 1.25rem;
+    display: flex;
+    gap: var(--wy-gap);
+  }
+
+  .wy-card {
+    display: flex;
+    flex: 0 0 min(86%, 23rem);
+    flex-direction: column;
+    scroll-snap-align: start;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1.1rem;
+    background-color: #101b3c;
+  }
+
+  .wy-art {
+    position: relative;
+    flex: 0 0 auto;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background-color: #0a1129;
+  }
+
+  /* The layer that drifts. It is inset past both edges of its frame in the pinned
+     mode below, so the photograph can travel without ever showing a border. */
+  .wy-art-in {
+    position: absolute;
+    inset: 0;
+  }
+
+  .wy-route {
+    position: absolute;
+    inset: 8% 6%;
+  }
+
+  /* The one card whose picture is drawn rather than photographed sits on a wash
+     of MEDURUN red instead of a photograph's own light, so the four cards carry
+     the same visual weight when they pass the middle. Behind `.wy-art-in`, which
+     follows it in the source order. */
+  .wy-art--route::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      68% 46% at 52% 50%,
+      rgba(237, 28, 36, 0.17),
+      rgba(237, 28, 36, 0) 72%
+    );
+  }
+
+  .wy-art-scrim {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      to top,
+      rgba(10, 17, 41, 0.72),
+      rgba(10, 17, 41, 0) 60%
+    );
+  }
+
+  .wy-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    padding: 1.4rem 1.5rem 1.65rem;
+  }
+
+  .wy-num {
+    font-size: 0.74rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.26em;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .wy-accent {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+    color: #ed1c24;
+  }
+
+  .wy-accent-icon {
+    flex: 0 0 auto;
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .wy-accent-line {
+    display: block;
+    height: 1px;
+    width: 2.75rem;
+    background-color: #ed1c24;
+  }
+
+  .wy-name {
+    margin-top: 0.8rem;
+    font-size: 1.6rem;
+    line-height: 1.1;
+    color: #ffffff;
+  }
+
+  .wy-text {
+    margin-top: 0.7rem;
+    max-width: 44ch;
+    font-size: 0.95rem;
+    line-height: 1.62;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  /* The counter reports a position inside a sequence that only exists when the
+     stage is pinned. On a swipeable carousel it would be reporting something the
+     reader is already holding in their thumb, and with no JavaScript it would be
+     frozen at 01/04 while all four cards sat in plain sight — a small lie. Same
+     reasoning, and the same `.js` gate, as `.svc-counter`. */
+  .wy-meter {
+    display: none;
+  }
+
+  /* A desktop frame that is not going to get the pinned journey — reduced motion,
+     or scripting off — gets a two-by-two grid rather than a swipeable row. A row
+     of 23rem cards on a 73rem column is a scrollbar nobody asked for; the grid
+     puts all four principles on one screen, which is what a reader who has turned
+     motion off is there for. The pinned rules below out-specify this with `.js`. */
+  @media (min-width: 1024px) {
+    .wy-rail {
+      overflow: visible;
+      scroll-snap-type: none;
     }
 
-    .why-stage {
+    .wy-run {
+      --wy-gap: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    /* 320vh of track under a one-screen stage is 2.2 screens of travel. The run
+       spends the middle 82% of it walking four cards past the centre; the 6% in
+       front and the 12% behind are the first and last cards held still, which is
+       where "stop precisely on the final card and keep it readable" lives. The
+       shares themselves are in `WhyJourney` (`RUN`), because they are fractions
+       of a travel these two rules define. */
+    .js .wy-track {
+      height: 320vh;
+    }
+
+    .js .wy-stage {
       position: sticky;
       top: var(--header-h);
       display: flex;
       flex-direction: column;
-      justify-content: center;
       min-height: calc(100vh - var(--header-h));
+      padding-block: 2.25rem 1.5rem;
     }
 
-    /* Closer to the heading than the grid version, because the heading has to stay
-       on screen above a pile that is three quarters of a screen tall. */
-    .js .why-band {
-      margin-top: 2.5rem;
-      /* Written every frame by `PrinciplesBand`; declared here so the calcs below
-         are valid on the first paint, before any scroll has happened. */
-      --why-t: 0;
+    /* No bottom rule on the section: the track ends where the last card finishes
+       being read, and `#how` starts on the next pixel. */
+    .js .wy-section {
+      padding-bottom: 0;
     }
 
-    .js .why-stack {
-      display: block;
+    .js .wy-head {
+      flex: 0 0 auto;
+    }
+
+    .js .wy-rail {
       position: relative;
-      max-width: 52rem;
-
-      /* How far each card rests below the one before it, and the one number the
-         whole pile is built from: the rest offsets, the stack's height and every
-         card's rise are all derived from it. 5.8rem is the measured height of a
-         card's number row plus its title plus a few pixels of air — any less and
-         the card on top cuts the title of the card under it, which is the one
-         thing the pile cannot do if it is to read as four things rather than one
-         card with three shadows. */
-      --why-step: 5.8rem;
-
-      /* The first card stays in flow, so the stack is exactly as tall as a card
-         plus the three seats above it — no height has to be guessed, and a card
-         that grows a line at some width takes the stack with it. */
-      padding-bottom: calc(3 * var(--why-step));
-
-      /* What hides a card before its turn. Every card parks exactly on this edge
-         (see `--why-rise`), so an unarrived card is not faded or shrunk, it is
-         simply not in the box yet — which is what lets the cards be fully opaque
-         and actually occlude each other rather than ghosting the text underneath. */
-      overflow: hidden;
+      display: flex;
+      flex: 1 1 auto;
+      align-items: stretch;
+      min-height: 0;
+      margin-top: 2rem;
+      /* Clipped across, open down. `clip` rather than `hidden` on purpose: hidden
+         would leave a scroll container behind, and a screen reader moving focus
+         to an off-screen card would scroll it and desynchronise the transform
+         from the scroll position it is supposed to be a pure function of. The
+         vertical axis stays visible so the centred card's 1.03 scale and its
+         shadow are not shaved off at the top and bottom edges. */
+      overflow-x: clip;
+      overflow-y: visible;
+      scroll-snap-type: none;
     }
 
-    /* Every card at the same origin, offset down by its seat. `z-index` comes from
-       the component, so a later card always covers an earlier one. */
-    .js .why-stack .principle {
+    /* The one layer that can take the brief's 0.6x literally, because it repeats
+       forever and has no edge to run out of: the grid slides at exactly six
+       tenths of the track's own translation. */
+    .js .wy-rail::before {
+      content: "";
       position: absolute;
-      left: 0;
-      right: 0;
-      top: calc(var(--why-seat) * var(--why-step));
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 76px 76px;
+      background-position: var(--wy-gx, 0px) 0;
+      mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 14%,
+        #000 86%,
+        transparent
+      );
+    }
 
-      /* The four-column dressing, undone: no left rule, the top rule back, and
-         padding that belongs to a full-width card. `cn()` is a plain join rather
-         than tailwind-merge, so the utilities cannot be replaced at the class
-         level — they are overridden here instead, and the `.js` on the selector is
-         what buys the specificity to do it. */
-      border-left-width: 0;
-      border-top-width: 1px;
-      padding: 1.5rem 1.5rem 1.75rem;
+    .js .wy-run {
+      --wy-gap: 1.75rem;
+      display: flex;
+      position: relative;
+      z-index: 1;
+      flex: 0 0 auto;
+      width: 100%;
+      transform: translate3d(var(--wy-x, 0px), 0, 0);
+      transition: none;
+      will-change: transform;
+    }
 
-      /* Opaque, so a card genuinely occludes the one it slides over. This is the
-         section's own ground colour, which is why the pile reads as one surface
-         rather than four panels floating on it — and the shadow above the card's
-         own edge is the only thing that says there is anything underneath. It is
-         cast upward only, and it is nearly nothing: enough that the covering
-         reads, not enough to turn an editorial band into a card UI. */
-      background-color: #101b3c;
-      box-shadow: 0 -16px 26px -16px rgba(4, 8, 22, 0.8);
-
-      /* Two windows, both 24% wide: one for this card arriving, one for the next
-         card covering it. `--why-lead` and `--why-next` are the scroll positions
-         those happen at, written per card by the component from the same constants
-         it uses to decide which card is current. */
-      --why-in: clamp(0, calc((var(--why-t) - var(--why-lead)) / 0.24), 1);
-      --why-over: clamp(0, calc((var(--why-t) - var(--why-next)) / 0.24), 1);
-
-      /* Far enough to sit on the stack's bottom edge and no further, which is why
-         `100%` — the card's own height — is in it: the rise is measured from where
-         the card rests to where the clip is, so every card leaves the edge at the
-         moment its window opens and none of them travels much more than it has to.
-         Later cards have less to climb, which is also how a real pile behaves.
-
-         The 3rem is the slack. `100%` is the card's *own* height and the clip sits
-         at the *tallest* card's, so a card with a one-line body would otherwise
-         park a couple of dozen pixels short and show a sliver of itself waiting
-         its turn. Overshooting by more than the cards can differ by puts every one
-         of them safely outside the box, and costs the tallest card 48px of extra
-         travel that nobody can see. */
-      --why-rise: calc(100% + 3rem + (3 - var(--why-seat)) * var(--why-step));
-
-      transform-origin: center top;
-      transform: translate3d(0, calc((1 - var(--why-in)) * var(--why-rise)), 0)
-        scale(calc(1 - 0.03 * var(--why-over)));
-
-      /* No transition: the position is a function of the scroll offset and is
-         rewritten every frame. A transition on top of that would lag the pointer
-         and turn a reversal into a wobble. */
+    .js .wy-card {
+      --wy-near: 0;
+      --wy-off: 0;
+      flex: 0 0 calc((100% - 2 * var(--wy-gap)) / 1.34);
+      flex-direction: row;
+      align-items: stretch;
+      scroll-snap-align: none;
+      border-color: rgba(255, 255, 255, calc(0.07 + 0.13 * var(--wy-near)));
+      border-radius: 1.4rem;
+      transform: scale(calc(1 + 0.03 * var(--wy-near)));
       transition: none;
     }
 
-    /* The covering dim sits on the contents, never on the card. An element-level
-       opacity would take the background with it and the card would stop hiding
-       what is behind it — which is exactly the ghosting the opaque background is
-       there to prevent. Twelve percent is the brief's "only a little": the number
-       and title that stay showing above the card on top have to stay legible.
-
-       The accent is left out because it carries its own emphasis state, and it is
-       the one mark on a covered card that should not recede. */
-    .js .why-stack .principle > *:not(.principle-accent) {
-      opacity: calc(1 - 0.12 * var(--why-over));
+    .js .wy-art {
+      flex: 0 0 46%;
+      aspect-ratio: auto;
     }
 
-    /* Seats. Four numbers, and both the rest offset and the rise are derived from
-       them, so the depth of the pile is one value in one place. */
-    .js .why-stack .principle:nth-child(1) {
-      --why-seat: 0;
-      /* In flow, so the stack has a height to be. */
+    /* 40px of drift, and the frame is opened 12% past both edges so there is
+       always more photograph than frame to show. */
+    .js .wy-art-in {
+      inset: 0 -12%;
+      transform: translate3d(calc(var(--wy-off) * 40px), 0, 0);
+      transition: none;
+    }
+
+    .js .wy-art-in img,
+    .js .wy-route {
+      opacity: calc(0.52 + 0.48 * var(--wy-near));
+      transition: none;
+    }
+
+    .js .wy-art-scrim {
+      background-image: linear-gradient(
+        to right,
+        rgba(10, 17, 41, 0) 52%,
+        rgba(16, 27, 60, 0.9)
+      );
+    }
+
+    .js .wy-body {
+      justify-content: center;
+      padding: 2.25rem 2.5rem 2.25rem 2rem;
+    }
+
+    /* The number in MEDURUN red as the card reaches the middle. The plain colour
+       is declared first as its own fallback: a browser without `color-mix` drops
+       the second declaration and keeps the white. */
+    .js .wy-num {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.5);
+      color: color-mix(
+        in oklab,
+        #ed1c24 calc(var(--wy-near) * 100%),
+        rgba(255, 255, 255, 0.5)
+      );
+      transition: none;
+    }
+
+    /* The fast layer: 15px against the card's 40px of background drift, which is
+       the brief's 1.15x and 0.6x kept as an exact ratio to each other. */
+    .js .wy-accent {
+      margin-top: 1.4rem;
+      transform: translate3d(calc(var(--wy-off) * -15px), 0, 0);
+      transition: none;
+    }
+
+    .js .wy-accent-line {
+      width: calc(2.25rem + 2.5rem * var(--wy-near));
+      opacity: calc(0.45 + 0.55 * var(--wy-near));
+      transition: none;
+    }
+
+    .js .wy-name {
+      margin-top: 1.1rem;
+      font-size: clamp(2rem, 2.5vw, 2.6rem);
+    }
+
+    .js .wy-text {
+      margin-top: 0.9rem;
+      font-size: 1rem;
+    }
+
+    /* Dimmed but still readable, which is the point: the cards either side of the
+       middle are meant to be legible enough that the sequence reads as four
+       statements, not as one statement and some texture. */
+    .js .wy-name,
+    .js .wy-text {
+      opacity: calc(0.68 + 0.32 * var(--wy-near));
+      transition: none;
+    }
+
+    .js .wy-meter {
+      display: flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .js .wy-bar {
+      display: flex;
+      flex: 1 1 auto;
+      gap: 0.4rem;
+    }
+
+    .js .wy-seg {
       position: relative;
+      flex: 1 1 0;
+      height: 2px;
+      overflow: hidden;
+      background-color: rgba(255, 255, 255, 0.14);
     }
 
-    .js .why-stack .principle:nth-child(2) {
-      --why-seat: 1;
+    .js .wy-seg::after {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 100%;
+      background-color: #ed1c24;
+      transform: scaleX(var(--wy-near, 0));
+      transform-origin: left center;
+      transition: none;
     }
 
-    .js .why-stack .principle:nth-child(3) {
-      --why-seat: 2;
+    .js .wy-count {
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.2em;
+      color: rgba(255, 255, 255, 0.45);
     }
 
-    .js .why-stack .principle:nth-child(4) {
-      --why-seat: 3;
+    .js .wy-count b {
+      font-weight: 500;
+      color: #ffffff;
     }
 
-    /* Wider measure than the column version. A card is 52rem across here rather
-       than a quarter of the band, so 34ch would set a three-line paragraph in the
-       left third of it — and every line the body loses is a line the pile does not
-       have to be tall enough for. */
-    .js .why-stack .principle p {
-      max-width: 52ch;
-    }
-
-    /* The accent draws as the card arrives, from a scroll position rather than a
-       transition, for the same reason the card itself does. It lags the card
-       slightly and finishes before the card has landed, so the line is being drawn
-       under a card that is still moving. */
-    .js .why-stack .principle-accent {
-      transform: scaleX(clamp(0, calc((var(--why-in) - 0.15) / 0.5), 1));
-      transition: opacity 0.4s ease-out;
+    .js .wy-count i {
+      margin: 0 0.2rem;
+      font-style: normal;
+      color: rgba(255, 255, 255, 0.28);
     }
   }
 
-  /* A short laptop gets a tighter pile. 250vh of track is fine — the scroll
-     distance is relative to the viewport either way — but the stage has to fit
-     under the header at 660px of height, and the seats and the gap above them are
-     the two things that can give without touching the cards themselves. */
+  /* A short laptop gets a tighter stage. The track height is relative to the
+     viewport either way, so the only thing that has to give is the space around
+     the card — never the card's own words. */
   @media (min-width: 1024px) and (max-height: 860px) and (prefers-reduced-motion: no-preference) {
-    .js .why-band {
-      margin-top: 0.75rem;
+    .js .wy-stage {
+      padding-block: 1.25rem 1rem;
     }
 
-    .js .why-stack .principle {
-      padding: 1.25rem 1.5rem 1.5rem;
+    .js .wy-rail {
+      margin-top: 1.25rem;
     }
 
-    .js .why-stack {
-      --why-step: 5.25rem;
+    .js .wy-body {
+      padding: 1.5rem 1.85rem 1.5rem 1.5rem;
+    }
+
+    .js .wy-name {
+      margin-top: 0.9rem;
+      font-size: clamp(1.7rem, 2.1vw, 2.15rem);
+    }
+
+    .js .wy-accent {
+      margin-top: 1rem;
+    }
+
+    .js .wy-meter {
+      margin-top: 1rem;
     }
   }
 
@@ -3901,6 +4088,317 @@
       font-size: 0.84rem;
     }
   }
+
+  /* ── Partner story ─────────────────────────────────────────────────────────
+     The driver and agency bands read as one two-act sequence. Everything the
+     sequence adds — the travelling photographic window, the two lines of
+     oversized type, the tone marker for the journey rail — exists only inside
+     the pinned desktop block below. Here it is declared absent, which is the
+     state mobile, tablet, reduced motion and a page with scripting off all get:
+     two ordinary stacked sections with their usual reveals, nothing pinned.
+
+     `.pt-mark` carries the `#drivers` and `#agencies` anchors. They sit on
+     zero-height markers in normal flow rather than on the bands themselves
+     because a stuck band reports the stage's position, not the story's — which
+     would break both anchor navigation and the journey tracker's station
+     lookup, since that reads the last id whose top has passed the line. */
+  .pt-band,
+  .pt-lens,
+  .pt-shade,
+  .pt-clock {
+    display: none;
+  }
+
+  .pt-mark {
+    display: block;
+    height: 0;
+    scroll-margin-top: 5.5rem;
+  }
+
+  @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    /* One track, two sticky bands, one window that crosses both. `--pt-gap` is
+       the distance the agency marker is pushed below the driver band, and so it
+       is the act break: the agency band sticks exactly `stage + gap` into the
+       track. `PartnerStage` reads it back off the marker's computed margin
+       rather than keeping its own copy of the number. */
+    .js .pt-track {
+      --pt-gap: 54vh;
+      position: relative;
+      height: 360vh;
+    }
+
+    .js .pt-track .pt-mark--agency {
+      margin-top: var(--pt-gap);
+    }
+
+    .js .pt-track .pt-mark--drive {
+      scroll-margin-top: var(--pt-drivepad, 5.5rem);
+    }
+
+    /* Out of flow, so that where the page counts the agency band as started can
+       be tuned without moving the act break the margin above defines. */
+    .js .pt-track .pt-mark--nav {
+      position: absolute;
+      left: 0;
+      top: var(--pt-nav, 200vh);
+      scroll-margin-top: var(--pt-navpad, 5.5rem);
+    }
+
+    .js .pt-track .pt-act {
+      position: sticky;
+      top: var(--header-h);
+      display: flex;
+      height: calc(100vh - var(--header-h));
+      align-items: center;
+      padding-block: clamp(1rem, 4vh, 3.5rem);
+    }
+
+    .js .pt-track .pt-act > .shell {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .js .pt-track .pt-act--driver {
+      z-index: 1;
+    }
+
+    /* The navy arrives as a wipe from the right edge. The mask is on the band
+       itself and nothing inside it is transformed, so the edge stays put. */
+    .js .pt-track .pt-act--agency {
+      z-index: 2;
+      clip-path: inset(0 0 0 calc(100% - 100% * var(--pt-wipe, 0)));
+    }
+
+    /* Declared so the journey rail can read a tone change that no section box
+       can express: both bands are stuck, so their boxes say where the stage is
+       standing, not where the page turns navy. It paints nothing. */
+    .js .pt-track .pt-shade {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      top: calc(100vh - var(--header-h) + var(--pt-gap));
+      display: block;
+      pointer-events: none;
+    }
+
+    /* The travelling window lives in its own sticky layer above both bands, so
+       it can pass over the navy while the navy passes over the white — an order
+       document order cannot express. Zero height: it is a seat, not a box. */
+    .js .pt-track .pt-lens {
+      position: sticky;
+      top: var(--header-h);
+      z-index: 5;
+      display: block;
+      height: 0;
+      pointer-events: none;
+    }
+
+    .js .pt-track .pt-win {
+      position: absolute;
+      left: var(--pt-win-x, 0px);
+      top: var(--pt-win-y, 0px);
+      width: var(--pt-win-w, 0px);
+      height: var(--pt-win-h, 0px);
+      overflow: hidden;
+      background-color: #eef1f9;
+      opacity: var(--pt-winop, 0);
+      contain: layout paint;
+      transition: none;
+    }
+
+    .js .pt-track .pt-win-layer {
+      position: absolute;
+      inset: 0;
+      display: block;
+      transition: none;
+    }
+
+    .js .pt-track .pt-win-layer--drive {
+      opacity: calc(1 - var(--pt-cross, 0));
+    }
+
+    .js .pt-track .pt-win-layer--agency {
+      opacity: var(--pt-cross, 0);
+    }
+
+    .js .pt-track .pt-win-scrim {
+      position: absolute;
+      inset: 0;
+      display: block;
+      background-color: rgba(10, 17, 41, 0.06);
+    }
+
+    /* The line of oversized type. It is one flex row of words, separators and
+       image windows, laid out at its natural width and then translated by
+       scroll — no marquee, no loop, no duration. The image windows move the
+       other way at a fraction of the line's own travel, which is the whole of
+       the parallax: no scale, no rotation, no depth tricks. */
+    .js .pt-track .pt-band {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 0;
+      display: flex;
+      width: max-content;
+      align-items: center;
+      gap: clamp(0.7rem, 1.5vw, 1.6rem);
+      opacity: var(--pt-bo, 0);
+      transform: translate3d(calc(-50% + var(--pt-bx, 0px)), -50%, 0);
+      transition: none;
+      will-change: transform, opacity;
+    }
+
+    .js .pt-track .pt-band--drive {
+      --pt-bo: var(--pt-bo-d, 0);
+      --pt-bx: var(--pt-bx-d, 0px);
+      --pt-par: var(--pt-bp-d, 0px);
+    }
+
+    .js .pt-track .pt-band--agency {
+      --pt-bo: var(--pt-bo-a, 0);
+      --pt-bx: var(--pt-bx-a, 0px);
+      --pt-par: var(--pt-bp-a, 0px);
+    }
+
+    .js .pt-track .pt-word {
+      font-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
+      font-size: clamp(2.6rem, 4.7vw, 5.25rem);
+      font-weight: 400;
+      line-height: 0.94;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .js .pt-track .pt-dot {
+      font-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
+      font-size: clamp(1.6rem, 2.7vw, 3rem);
+      line-height: 1;
+      color: #ed1c24;
+    }
+
+    .js .pt-track .pt-frame,
+    .js .pt-track .pt-slot {
+      position: relative;
+      display: block;
+      width: clamp(6rem, 9.9vw, 9.5rem);
+      flex: none;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+      transform: translate3d(var(--pt-par, 0px), 0, 0);
+      transition: none;
+    }
+
+    /* The empty one of the two windows: the seat the travelling window rests on
+       while the line carries it. It is measured, never painted. */
+    .js .pt-track .pt-slot {
+      visibility: hidden;
+    }
+
+    /* Inside the stage the column's entrance is scrubbed by scroll rather than
+       tripped once by an observer, so every reveal state the rest of the page
+       uses is neutralised here and rewritten as a function of `--pt-din`
+       (driver in), `--pt-dout` (driver out) and `--pt-ain` (agency in). */
+    .js .pt-track .pt-act .reveal[data-visible="false"],
+    .js .pt-track .pt-act .img-reveal[data-shown="false"] {
+      opacity: 1;
+      clip-path: inset(0);
+      transform: none;
+      transition: none;
+    }
+
+    .js .pt-track .pt-act--driver .reveal--items {
+      --pt-in: var(--pt-din, 0);
+      --pt-out: var(--pt-dout, 0);
+    }
+
+    .js .pt-track .pt-act--agency .reveal--items {
+      --pt-in: var(--pt-ain, 0);
+      --pt-out: 0;
+    }
+
+    /* Six lines, each starting a tenth of the run after the one above it and
+       taking half the run to arrive: label, headline, sentence, conditions,
+       points, action — the reading order the band already has. */
+    .js .pt-track .pt-act .reveal--items > .stagger-up,
+    .js .pt-track .pt-act .reveal--items > .op-stagger {
+      --pt-q: clamp(0, calc((var(--pt-in, 0) - var(--pt-n, 0) * 0.1) / 0.5), 1);
+      opacity: calc(var(--pt-q) * (1 - var(--pt-out, 0)));
+      transform: translate3d(
+        0,
+        calc((1 - var(--pt-q)) * 24px - var(--pt-out, 0) * 20px),
+        0
+      );
+      transition: none;
+      transition-delay: 0ms !important;
+    }
+
+    .js .pt-track .pt-act .reveal--items > :nth-child(1) { --pt-n: 0; }
+    .js .pt-track .pt-act .reveal--items > :nth-child(2) { --pt-n: 1; }
+    .js .pt-track .pt-act .reveal--items > :nth-child(3) { --pt-n: 2; }
+    .js .pt-track .pt-act .reveal--items > :nth-child(4) { --pt-n: 3; }
+    .js .pt-track .pt-act .reveal--items > :nth-child(5) { --pt-n: 4; }
+    .js .pt-track .pt-act .reveal--items > :nth-child(6) { --pt-n: 5; }
+
+    /* The real photograph takes over from the travelling window: it comes up as
+       the window goes down, on the same value, so what the reader holds still
+       on is the selectable image in the page, not a decorative copy of it. */
+    .js .pt-track .pt-act .pt-fig {
+      transition: none;
+    }
+
+    .js .pt-track .pt-act--driver .pt-fig {
+      opacity: var(--pt-dfig, 0);
+    }
+
+    .js .pt-track .pt-act--agency .pt-fig {
+      opacity: var(--pt-afig, 0);
+    }
+
+    /* A short viewport leaves the stage shorter than the column is tall. Trim
+       the column rather than let the action fall off the bottom of the stage. */
+    @media (max-height: 820px) {
+      .js .pt-track .pt-act {
+        padding-block: 1rem;
+      }
+
+      .js .pt-track .pt-act .reveal--items h2 {
+        font-size: 2.15rem;
+        margin-top: 1.1rem;
+      }
+
+      .js .pt-track .pt-act .reveal--items > :nth-child(3) {
+        margin-top: 0.9rem;
+        font-size: 0.95rem;
+      }
+
+      .js .pt-track .pt-act .reveal--items > :nth-child(4) {
+        margin-top: 1rem;
+      }
+
+      .js .pt-track .pt-act .reveal--items > :nth-child(5) {
+        margin-top: 1.25rem;
+      }
+
+      .js .pt-track .pt-act .reveal--items > :nth-child(5) li {
+        padding-block: 0.6rem;
+      }
+
+      .js .pt-track .pt-act .reveal--items > :nth-child(6) {
+        margin-top: 1.4rem;
+      }
+
+      .js .pt-track .pt-word {
+        font-size: clamp(2.1rem, 3.9vw, 3.6rem);
+      }
+
+      .js .pt-track .pt-frame,
+      .js .pt-track .pt-slot {
+        width: clamp(5rem, 8.2vw, 7.75rem);
+      }
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3922,7 +4420,6 @@
   }
 
   .js .reveal[data-visible="false"],
-  .js .principle[data-revealed="false"],
   .js .reveal[data-visible="false"] .op-stagger,
   .js .reveal[data-visible="false"] .stagger-up,
   .js .reveal[data-visible="false"] .voices-in,
@@ -3967,12 +4464,6 @@
 
   .js .flow-stage[data-lit="false"] .flow-seg {
     clip-path: inset(0);
-  }
-
-  /* Drawn in full from the first frame. The accent is a scaled transform rather
-     than a clip, so it needs the transform reset and not `inset(0)`. */
-  .js .principle[data-revealed="false"] .principle-accent {
-    transform: none;
   }
 
   /* The photographs hold their authored crop and do not drift. The overscale is

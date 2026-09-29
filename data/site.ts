@@ -284,37 +284,108 @@ export const agencyPartner = {
   },
 } as const;
 
+/**
+ * One act of the partner sequence: the three words it is read across.
+ *
+ * The two partner bands are one pinned story on a desktop, and each act opens on
+ * its own line of oversized type before it settles into the band's real layout.
+ * The words live here rather than in the component because they are copy — three
+ * words a reader reads — even though the layer they are set on is decorative and
+ * hidden from assistive technology, which already has the heading and the
+ * sentence underneath it saying the same thing at length.
+ *
+ * `lead` names which of the two gaps between the words carries the image window
+ * that goes on to become the band's photograph. It is the driver side's first gap
+ * and the agency side's second, because the driver photograph sits on the left of
+ * its band and the agency photograph on the right: the window that is going to
+ * travel there starts on the side it is travelling to.
+ */
+export type PartnerAct = {
+  readonly words: readonly [string, string, string];
+  readonly lead: 0 | 1;
+};
+
+export const partnerActs: { readonly driver: PartnerAct; readonly agency: PartnerAct } = {
+  driver: { words: ["DRIVE", "RESPOND", "SUPPORT"], lead: 0 },
+  agency: { words: ["CONNECT", "COORDINATE", "SCALE"], lead: 1 },
+};
+
+/**
+ * What a principle card is a picture of.
+ *
+ * Three of the four are photographs of the thing the card claims. The fourth is a
+ * drawing, because transparency is about a shared *screen* — and the honest way to
+ * show a screen is to draw the view everyone is looking at, not to photograph a
+ * stranger looking at one. `RouteMap` is already that view in this page's own
+ * vocabulary, so the card borrows it rather than inventing a second one.
+ */
+export type PillarVisual =
+  | {
+      readonly kind: "photo";
+      readonly src: string;
+      readonly alt: string;
+      /** Tailwind object-position for the crop, e.g. `object-[50%_40%]`. */
+      readonly position: string;
+    }
+  | { readonly kind: "route" };
+
 export type Pillar = {
   id: string;
+  /** Two-digit card number, 01-04. The desktop band walks through them in order. */
+  number: string;
   title: string;
   body: string;
   icon: "trust" | "speed" | "transparency" | "reliability";
+  visual: PillarVisual;
 };
 
 export const pillars: Pillar[] = [
   {
     id: "trust",
+    number: "01",
     title: "Trust",
     body: "A platform built to be India's most reliable medical emergency support network.",
     icon: "trust",
+    visual: {
+      kind: "photo",
+      src: "https://images.unsplash.com/photo-1780570348966-051be4416237?auto=format&fit=crop&w=1400&q=70",
+      alt: "Two crew members guiding a patient on a stretcher into the back of an ambulance.",
+      position: "object-[50%_42%]",
+    },
   },
   {
     id: "speed",
+    number: "02",
     title: "Speed",
     body: "Technology that shortens the distance between a request and a responding crew.",
     icon: "speed",
+    visual: {
+      kind: "photo",
+      src: "https://images.unsplash.com/photo-1647446732151-5b0cdc252b4d?auto=format&fit=crop&w=1400&q=70",
+      alt: "An ambulance under way with its beacons lit, photographed in motion.",
+      position: "object-[50%_50%]",
+    },
   },
   {
     id: "transparency",
+    number: "03",
     title: "Transparency",
     body: "Live coordination so patients, providers, and agencies see the same picture.",
     icon: "transparency",
+    visual: { kind: "route" },
   },
   {
     id: "reliability",
+    number: "04",
     title: "Reliability",
     body: "Immediate, accessible support — anytime, anywhere.",
     icon: "reliability",
+    visual: {
+      kind: "photo",
+      src: "https://images.unsplash.com/photo-1783348428738-4130e9742223?auto=format&fit=crop&w=1400&q=70",
+      alt: "A line of ambulances standing ready at their base, nose out, waiting for assignment.",
+      position: "object-[50%_55%]",
+    },
   },
 ];
 

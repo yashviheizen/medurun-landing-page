@@ -118,8 +118,15 @@ export function JourneyTracker() {
         gap = Math.min(gap, ats[i] - ats[i - 1]);
       hold = Math.max(Math.min(DWELL_MAX, gap * 0.45), 0.001);
 
+      // A band is normally a section of the page. `[data-band]` is the exception:
+      // a stretch of one section that carries its own tone, declared because the
+      // section's own box cannot say it — the partner story pins two bands of
+      // opposite tone inside one track, so while they are stuck their boxes are
+      // wherever the stage is standing rather than where the tone changes. Those
+      // come after their section in document order, and the lookup below reads
+      // backwards, so the narrower answer is the one that wins.
       bands = Array.from(
-        document.querySelectorAll<HTMLElement>("#main > *, footer"),
+        document.querySelectorAll<HTMLElement>("#main > *, #main [data-band], footer"),
       ).map((band) => {
         const rect = band.getBoundingClientRect();
         return {
