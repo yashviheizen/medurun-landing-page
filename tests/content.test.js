@@ -51,7 +51,7 @@ test("all ten required sections are present on the page", () => {
     "Positioning",
     "About",
     "Services",
-    "PartnerSection",
+    "PartnerStory",
     "WhyMedurun",
     "HowItWorks",
     "CredibilityStrip",
